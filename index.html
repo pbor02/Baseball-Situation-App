@@ -28,6 +28,7 @@
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     display:flex;flex-direction:column;
     overflow:hidden;
+    height:100dvh;
   }
 
   /* ---------- Scoreboard header ---------- */
@@ -94,14 +95,14 @@
   .hint b{color:#cdd8e1;font-weight:700;}
 
   /* ---------- Field ---------- */
-  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px;touch-action:none;position:relative;}
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0;touch-action:none;position:relative;}
 
   /* floating controls in the dark corners around the field */
   .corner{position:absolute;z-index:6;display:flex;gap:6px;}
   .corner.tl{top:8px;left:8px;}
   .corner.tr{top:8px;right:8px;}
-  .corner.bl{bottom:8px;left:8px;}
-  .corner.br{bottom:8px;right:8px;}
+  .corner.bl{bottom:calc(10px + env(safe-area-inset-bottom));left:8px;}
+  .corner.br{bottom:calc(10px + env(safe-area-inset-bottom));right:8px;}
   .cbtn{
     border:1px solid var(--line);background:rgba(18,27,37,.82);color:var(--ink);
     font-size:13px;font-weight:700;letter-spacing:.01em;padding:0 14px;height:42px;border-radius:12px;
@@ -114,8 +115,8 @@
     background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
     background-position:calc(100% - 15px) 18px,calc(100% - 10px) 18px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
   .cue{
-    position:absolute;top:54px;left:50%;transform:translateX(-50%);
-    max-width:86%;z-index:5;pointer-events:none;
+    position:absolute;bottom:calc(64px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+    max-width:66%;z-index:5;pointer-events:none;
     background:rgba(10,17,24,.8);color:#eaf1f6;border:1px solid var(--line);border-radius:20px;
     padding:7px 14px;font-size:13px;font-weight:700;text-align:center;line-height:1.35;
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(0,0,0,.4);
@@ -132,8 +133,7 @@
   }
   .replay:active{transform:translateY(1px);}
 
-  svg#field{width:100%;height:100%;touch-action:none;display:block;
-    filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));}
+  svg#field{width:100%;height:100%;touch-action:none;display:block;}
   svg#field *{touch-action:none;}
   .fielder{cursor:grab;}
   .fielder:active{cursor:grabbing;}
@@ -153,8 +153,8 @@
     .seg button{padding:7px 11px;min-height:40px;}
     .cbtn{height:40px;padding:0 12px;font-size:12px;}
     .corner.tl,.corner.tr{top:6px;} .corner.tl{left:6px;} .corner.tr{right:6px;}
-    .corner.bl,.corner.br{bottom:6px;} .corner.bl{left:6px;} .corner.br{right:6px;}
-    .stage{padding:3px;}
+    .corner.bl,.corner.br{bottom:calc(8px + env(safe-area-inset-bottom));} .corner.bl{left:6px;} .corner.br{right:6px;}
+    .stage{padding:0;}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -179,6 +179,7 @@
     </div>
 
     <button id="replayBtn" class="replay" title="Replay movement" aria-label="Replay">&#9654;</button>
+    <button id="nextBtn" class="replay" title="Next situation" aria-label="Next">&#187;</button>
 
     <div class="outs" id="outsBox" role="button" tabindex="0" title="Tap to change outs">
       <div class="k">OUTS</div>
@@ -216,7 +217,7 @@
     </defs>
 
     <!-- beyond the fence -->
-    <rect x="0" y="0" width="1000" height="1000" fill="#0d141c"/>
+    <rect x="-1000" y="-1000" width="3000" height="3000" fill="#0d141c"/>
 
     <!-- fair territory grass + warning track + mow rings (clipped to the fair wedge) -->
     <g clip-path="url(#fairClip)">
@@ -333,8 +334,8 @@
     for(var k in attrs){ n.setAttribute(k,attrs[k]); }
     return n;
   }
-  function clampX(v){ return Math.max(185,Math.min(815,v)); }
-  function clampY(v){ return Math.max(200,Math.min(930,v)); }
+  function clampX(v){ return Math.max(225,Math.min(775,v)); }
+  function clampY(v){ return Math.max(205,Math.min(940,v)); }
   function toSvg(evt){
     var pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
     var p=pt.matrixTransform(svg.getScreenCTM().inverse());
@@ -606,6 +607,278 @@
       moves:{SS:AT.second, CF:AT.backSecond}}
   ];
 
+  /* ---------- expanded scenario library (generated) ---------- */
+  (function(){
+    function pt(x,y){return {x:x,y:y};}
+    function cp(p){return pt(Math.round(Math.max(228,Math.min(772,p.x))),Math.round(Math.max(208,Math.min(935,p.y))));}
+    function lerp(a,b,t){return cp(pt(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t));}
+    function beyond(s,d){var dx=s.x-HOME.x,dy=s.y-HOME.y,L=Math.hypot(dx,dy)||1;return cp(pt(s.x+dx/L*d,s.y+dy/L*d));}
+    function add(g,name,runners,outs,ball,moves,cue){PRESETS.push({g:g,name:name,runners:runners,outs:outs,ball:ball,moves:moves,cue:cue});}
+
+    var GBS={'3B':pt(352,602),'SS':pt(420,516),'2B':pt(596,516),'1B':pt(654,624),'P':pt(500,636)};
+    var OFD={LF:pt(300,335),CF:pt(500,262),RF:pt(700,335)};
+    var FLYS={LF:{shallow:pt(322,432),medium:pt(258,322),deep:pt(240,252)},
+              CF:{shallow:pt(500,392),medium:pt(500,286),deep:pt(500,220)},
+              RF:{shallow:pt(678,432),medium:pt(742,322),deep:pt(760,252)}};
+    var GAP={LCF:pt(376,264),RCF:pt(624,264)};
+    var LINEB={LF:pt(256,560),RF:pt(744,560)};
+    var IF=['3B','SS','2B','1B','P'];
+    var CUT_HOME={LF:'3B',CF:'1B',RF:'1B'};
+
+    function coverFirst(mv,f){ if(f==='1B'){mv['P']=AT.first;} else {mv['1B']=AT.first;} mv['RF']=AT.backFirst; }
+    function firstTag(f){ return f==='1B'?'P covering 1st':'1B'; }
+    function pivot(f){ return (f==='SS'||f==='3B')?'2B':'SS'; }
+    function backupFor(of,s){ return of==='CF' ? (s.x<500?'LF':'RF') : 'CF'; }
+
+    /* Ground ball school */
+    IF.forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; coverFirst(mv,f);
+      add('Ground ball school','Routine grounder to '+f,[],0,GBS[f],mv,
+          f+' fields → throw to '+firstTag(f)+' · RF backs up the throw');
+    });
+    add('Ground ball school','Slow roller in front of 3B',[],0,pt(392,720),
+        {'3B':pt(392,720),'1B':AT.first,'RF':AT.backFirst},'3B charges → throw on the run to 1B');
+    add('Ground ball school','Deep in the hole at SS',[],0,pt(372,556),
+        {'SS':pt(372,556),'1B':AT.first,'RF':AT.backFirst},'SS backhands → plant → strong throw to 1B');
+    add('Ground ball school','Up the middle behind the mound',[],0,pt(522,560),
+        {'2B':pt(522,560),'1B':AT.first,'RF':AT.backFirst},'2B ranges behind the bag → throw to 1B');
+    add('Ground ball school','Dribbler in front of the plate',[],0,pt(500,806),
+        {'C':pt(500,806),'1B':AT.first,'RF':AT.backFirst},'C pounces → step and throw to 1B');
+
+    /* Turn two (R1) */
+    IF.forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; var pv=pivot(f); mv[pv]=AT.second;
+      if(f==='1B'){mv['P']=AT.first;} else {mv['1B']=AT.first;}
+      add('Turn two (R1)','Turn two: grounder to '+f,[1],0,GBS[f],mv,
+          f+' → '+pv+' at 2nd for one → relay to 1st for two');
+    });
+
+    /* Runner on 2nd */
+    ['3B','SS'].forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; coverFirst(mv,f);
+      add('Runner on 2nd','R2: grounder to '+f+' — look him back',[2],0,GBS[f],mv,
+          f+' looks the runner back to 2nd → then throws to 1B');
+    });
+    ['2B','1B','P'].forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; coverFirst(mv,f); mv['3B']=AT.third;
+      add('Runner on 2nd','R2: grounder to '+f,[2],0,GBS[f],mv,
+          f+' throws to 1B · 3B covers third in case he runs');
+    });
+    ['SS','3B'].forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; coverFirst(mv,f); mv['C']=AT.home;
+      add('Runner on 2nd','R2 and R3: grounder to '+f+' — check third',[2,3],1,GBS[f],mv,
+          f+' freezes the runner → throw to 1B · C guards home');
+    });
+
+    /* Infield in (R3) */
+    IF.forEach(function(f){
+      var spot=lerp(GBS[f],HOME,0.14); var mv={}; mv[f]=spot; mv['C']=AT.home;
+      add('Infield in (R3)','Infield in: grounder to '+f+' — throw home',[3],1,spot,mv,
+          f+' fields on the grass → fire HOME · C makes the tag');
+    });
+
+    /* Bases loaded */
+    IF.forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; mv['C']=AT.home; if(f==='1B'){mv['P']=AT.first;}else{mv['1B']=AT.first;}
+      add('Bases loaded','Loaded: grounder to '+f+' — force at home',[1,2,3],1,GBS[f],mv,
+          f+' → HOME for the force → C fires to 1st for two');
+    });
+
+    /* Runners on 1st and 2nd */
+    add('Runners on 1st and 2nd','R1 and R2: grounder to 3B — step on third',[1,2],0,GBS['3B'],
+        {'3B':AT.third,'1B':AT.first,'RF':AT.backFirst},'3B fields and steps on 3rd → throw across for two');
+    add('Runners on 1st and 2nd','R1 and R2: grounder to SS — force at third',[1,2],0,GBS.SS,
+        {'SS':GBS.SS,'3B':AT.third},'SS throws to 3B for the easy force at third');
+    ['2B','1B','P'].forEach(function(f){
+      var mv={}; mv[f]=GBS[f]; var pv=pivot(f); mv[pv]=AT.second;
+      if(f==='1B'){mv['P']=AT.first;} else {mv['1B']=AT.first;}
+      add('Runners on 1st and 2nd','R1 and R2: grounder to '+f+' — turn two',[1,2],0,GBS[f],mv,
+          f+' → '+pv+' at 2nd → relay to 1st');
+    });
+
+    /* Fly balls */
+    ['LF','CF','RF'].forEach(function(of){
+      ['shallow','medium','deep'].forEach(function(dep){
+        var s=FLYS[of][dep], bu=backupFor(of,s), mv={};
+        mv[of]=s; mv[bu]=lerp(OFD[bu],beyond(s,66),0.75);
+        add('Fly balls','Fly ball to '+of+' ('+dep+')',[],0,s,mv,
+            of+' calls it LOUD → '+bu+' backs him up');
+      });
+    });
+    add('Fly balls','Fly ball down the LF line',[],0,LINEB.LF,
+        {'LF':LINEB.LF,'3B':lerp(defaultOf('3B'),LINEB.LF,0.4)},'LF sprints to the line · 3B drifts out in case it drops');
+    add('Fly balls','Fly ball down the RF line',[],0,LINEB.RF,
+        {'RF':LINEB.RF,'1B':lerp(defaultOf('1B'),LINEB.RF,0.4)},'RF sprints to the line · 1B drifts out in case it drops');
+
+    /* Pop-ups and priority */
+    add('Pop-ups and priority','Pop-up: SS into shallow LF',[],0,pt(388,446),
+        {'SS':pt(388,446),'LF':lerp(OFD.LF,pt(388,446),0.5)},'SS goes back hard — LF calls him off if he can get there');
+    add('Pop-ups and priority','Pop-up: 2B into shallow RF',[],0,pt(612,446),
+        {'2B':pt(612,446),'RF':lerp(OFD.RF,pt(612,446),0.5)},'2B drifts back — RF has priority if he calls it');
+    add('Pop-ups and priority','Priority: SS calls off 3B',[],0,pt(368,560),
+        {'SS':pt(368,560),'3B':pt(300,646)},'SS has priority — 3B peels off when he hears the call');
+    add('Pop-ups and priority','Priority: SS takes it behind 2nd',[],0,pt(500,470),
+        {'SS':pt(500,470),'2B':pt(566,520)},'Ball over the bag belongs to SS — 2B gives way');
+    add('Pop-ups and priority','Pop-up on the mound',[],0,pt(500,610),
+        {'SS':pt(500,610),'P':pt(444,660)},'An infielder takes it — P gets out of the way');
+    add('Pop-ups and priority','Pop-up: 1B near the line',[],0,pt(700,700),
+        {'1B':pt(700,700),'2B':AT.first},'1B drifts to the line → 2B covers the bag');
+    add('Pop-ups and priority','Pop-up: 3B near the line',[],0,pt(300,700),
+        {'3B':pt(300,700),'SS':AT.third},'3B takes it → SS covers third');
+    add('Pop-ups and priority','Foul pop: catcher behind the plate',[],0,pt(556,908),
+        {'C':pt(556,908)},'C flips the mask, finds the ball, then makes the catch');
+    add('Pop-ups and priority','Foul pop: 1B side',[],0,pt(742,706),
+        {'1B':pt(742,706),'P':AT.first},'1B ranges foul → P covers 1st just in case');
+    add('Pop-ups and priority','Foul pop: 3B side',[],0,pt(258,706),
+        {'3B':pt(258,706),'P':pt(430,700)},'3B ranges foul → P backs up the infield');
+    add('Pop-ups and priority','Infield fly: bases loaded',[1,2,3],1,pt(452,520),
+        {'SS':pt(452,520)},'Umpire calls infield fly — batter is out · runners stay unless it drops');
+
+    /* Tag-ups */
+    ['LF','CF','RF'].forEach(function(of){
+      var s=FLYS[of].deep, cutm=CUT_HOME[of], mv={};
+      mv[of]=s; mv[cutm]=lerp(AT.home,s,0.34); mv['C']=AT.home;
+      add('Tag-ups (R3)','Sac fly to '+of+' — runner tags',[3],1,s,mv,
+          of+' catches → hit the cutoff ('+cutm+') → C takes the play at the plate');
+    });
+    ['LF','CF','RF'].forEach(function(of){
+      var s=FLYS[of].shallow, mv={}; mv[of]=s; mv['C']=AT.home;
+      add('Tag-ups (R3)','Shallow fly to '+of+' — runner holds',[3],1,s,mv,
+          of+' charges and catches moving in → runner should NOT test him');
+    });
+    ['CF','RF'].forEach(function(of){
+      var s=FLYS[of].deep, mv={}; mv[of]=s; mv['SS']=lerp(AT.third,s,0.4); mv['3B']=AT.third;
+      add('Tag-ups (R2)','Deep fly to '+of+' — R2 tags for 3rd',[2],1,s,mv,
+          of+' catches → throw through SS to 3B');
+    });
+    var sT1=FLYS.CF.medium, mvT1={CF:sT1,'1B':lerp(AT.home,sT1,0.34),'C':AT.home,'2B':AT.second};
+    add('Tag-ups (R3)','R1 and R3: fly to CF — watch both tags',[1,3],1,sT1,mvT1,
+        'CF throws home for R3 · 2B covers 2nd in case R1 tags');
+    var sT2=FLYS.CF.deep, mvT2={CF:sT2,'1B':lerp(AT.home,sT2,0.34),'C':AT.home,'3B':AT.third};
+    add('Tag-ups (R3)','R2 and R3: deep sac fly to CF',[2,3],1,sT2,mvT2,
+        'CF hits the cutoff → look R2 back to 2nd · C covers home');
+
+    /* Singles and cutoffs */
+    var SNG={LF:pt(248,362),CF:pt(508,326),RF:pt(756,368)};
+    var CUTS={LF:'SS',CF:'SS',RF:'2B'};
+    ['LF','CF','RF'].forEach(function(of){
+      var s=SNG[of],cut=CUTS[of],oth=(cut==='SS')?'2B':'SS',mv={};
+      mv[of]=s; mv[cut]=lerp(AT.second,s,0.45); mv[oth]=AT.second;
+      add('Singles and cutoffs','Single to '+of+' — ball in to 2nd',[],0,s,mv,
+          of+' fields clean → hit '+cut+' the cutoff → ball to 2nd');
+    });
+    ['LF','CF','RF'].forEach(function(of){
+      var s=SNG[of],mv={};
+      mv[of]=s; mv['SS']=lerp(AT.third,s,0.42); mv['3B']=AT.third; mv['2B']=AT.second;
+      add('Singles and cutoffs','R1: single to '+of+' — throw to 3rd',[1],0,s,mv,
+          of+' throws through SS to 3B · 2B covers 2nd behind the runner');
+    });
+    ['LF','CF','RF'].forEach(function(of){
+      var s=SNG[of],cutm=CUT_HOME[of],mv={};
+      mv[of]=s; mv[cutm]=lerp(AT.home,s,0.36); mv['C']=AT.home; mv[CUTS[of]==='SS'?'2B':'SS']=AT.second;
+      add('Singles and cutoffs','R2: single to '+of+' — play at the plate',[2],0,s,mv,
+          of+' comes up throwing → cutoff '+cutm+' → C blocks the plate');
+    });
+    ['LF','CF','RF'].forEach(function(of){
+      var s=SNG[of],cutm=CUT_HOME[of],mv={};
+      mv[of]=s; mv[cutm]=lerp(AT.home,s,0.36); mv['C']=AT.home; mv['3B']=AT.third;
+      add('Singles and cutoffs','R1 and R2: single to '+of,[1,2],0,s,mv,
+          'Throw home through the cutoff · 3B holds the trail runner');
+    });
+    ['LF','CF','RF'].forEach(function(of){
+      var s=SNG[of],mv={};
+      mv[of]=s; mv[CUTS[of]]=lerp(AT.second,s,0.45); mv[CUTS[of]==='SS'?'2B':'SS']=AT.second;
+      add('Singles and cutoffs','R1 and R3: single to '+of+' — concede the run',[1,3],0,s,mv,
+          'Run scores — throw to 2nd and keep the double play in order');
+    });
+    ['LF','CF','RF'].forEach(function(of){
+      var s=SNG[of],cutm=CUT_HOME[of],mv={};
+      mv[of]=s; mv[cutm]=lerp(AT.home,s,0.36); mv['C']=AT.home; mv['3B']=AT.third;
+      add('Singles and cutoffs','R2 and R3: single to '+of+' — two may score',[2,3],0,s,mv,
+          'Hit the cutoff — stop the second run at 3rd · C covers home');
+    });
+
+    /* Doubles and relays */
+    var DBL={LCF:GAP.LCF,RCF:GAP.RCF,LFL:LINEB.LF,RFL:LINEB.RF};
+    var DBLOF={LCF:'CF',RCF:'CF',LFL:'LF',RFL:'RF'};
+    var DBLN={LCF:'the left-center gap',RCF:'the right-center gap',LFL:'the LF corner',RFL:'the RF corner'};
+    Object.keys(DBL).forEach(function(k){
+      var s=DBL[k],of=DBLOF[k],rel=(k==='RCF'||k==='RFL')?'2B':'SS',tr=(rel==='SS')?'2B':'SS';
+      var mv={}; mv[of]=s; mv[rel]=lerp(s,AT.third,0.45); mv[tr]=AT.second; mv['3B']=AT.third; mv['P']=AT.backThird;
+      add('Doubles and relays','Double into '+DBLN[k],[],0,s,mv,
+          of+' runs it down → relay man '+rel+' → throw to 3B · P backs up');
+      var mv2={}; mv2[of]=s; mv2[rel]=lerp(s,AT.home,0.5); mv2[tr]=AT.second; mv2['C']=AT.home; mv2['P']=AT.backHome;
+      add('Doubles and relays','R1: double into '+DBLN[k]+' — play at the plate',[1],0,s,mv2,
+          of+' → relay '+rel+' → HOME · C blocks the plate · P backs up');
+    });
+
+    /* Bunt defense */
+    add('Bunt defense','Sac bunt: runner on 1st',[1],0,pt(446,792),
+        {'P':pt(446,792),'3B':pt(368,704),'1B':AT.first,'SS':AT.second},
+        'P and 3B attack → take the sure out at 1st · SS covers 2nd');
+    add('Bunt defense','Sac bunt: runner on 2nd (watch 3rd)',[2],0,pt(432,782),
+        {'P':pt(432,782),'3B':AT.third,'1B':AT.first},
+        'P covers the bunt → 3B guards the bag → take the out at 1st');
+    add('Bunt defense','Squeeze play: runner on 3rd',[3],1,pt(474,800),
+        {'P':pt(474,800),'C':AT.home,'1B':AT.first},'Squeeze! P fields and flips HOME → C tags');
+    add('Bunt defense','Drag bunt up the 1B line',[],0,pt(560,792),
+        {'1B':pt(560,792),'2B':AT.first,'P':lerp(defaultOf('P'),pt(560,792),0.5)},
+        '1B charges → 2B sprints to cover 1st → toss for the out');
+    add('Bunt defense','Push bunt to the 3B side',[],0,pt(438,760),
+        {'3B':pt(438,760),'1B':AT.first,'SS':AT.third},'3B charges → throw to 1st · SS covers 3rd behind him');
+    add('Bunt defense','Loaded: bunt — force at home',[1,2,3],0,pt(468,796),
+        {'P':pt(468,796),'C':AT.home,'1B':AT.first},'P to the plate for the force → C steps on home');
+
+    /* Steals and 1st-and-3rd */
+    add('Steals and 1st-and-3rd','R1 steals 2nd — throw down',[1],0,null,
+        {'SS':AT.second,'CF':AT.backSecond},'C throws to 2nd → SS straddles the bag → CF backs up');
+    add('Steals and 1st-and-3rd','R2 steals 3rd — throw down',[2],0,null,
+        {'3B':AT.third,'LF':AT.backThird},'C throws to 3rd → 3B covers → LF backs up');
+    add('Steals and 1st-and-3rd','1st and 3rd: throw through to 2nd',[1,3],1,null,
+        {'SS':AT.second,'CF':AT.backSecond,'P':lerp(defaultOf('P'),AT.home,0.3)},
+        'Throw through to 2nd → SS peeks at R3 first · P ready to cut');
+    add('Steals and 1st-and-3rd','1st and 3rd: SS cuts it off',[1,3],1,null,
+        {'SS':pt(500,560)},'C throws hard — SS cuts in front of 2nd and checks R3');
+    add('Steals and 1st-and-3rd','1st and 3rd: fake to 2nd, throw to 3rd',[1,3],1,null,
+        {'3B':AT.third,'SS':AT.second},'C pump-fakes to 2nd → fires to 3B behind the runner');
+    add('Steals and 1st-and-3rd','Delayed steal — be ready',[1],1,null,
+        {'2B':AT.second,'CF':AT.backSecond},'Watch the walking lead — 2B sneaks in to cover');
+    add('Steals and 1st-and-3rd','Pitchout: runner going',[1],0,null,
+        {'SS':AT.second,'C':pt(556,876)},'C steps out on the pitchout → quick throw to 2nd');
+
+    /* Pickoffs and wild pitches */
+    add('Pickoffs and wild pitches','Pickoff: P to 1st',[1],0,null,
+        {'1B':AT.first,'RF':AT.backFirst},'1B holds the bag → P snaps a throw → RF backs up');
+    add('Pickoffs and wild pitches','Pickoff: P spins to 2nd',[2],0,null,
+        {'SS':AT.second,'CF':AT.backSecond},'Daylight play — SS breaks to the bag, P spins and throws');
+    add('Pickoffs and wild pitches','Back-pick: C to 1st',[1],1,null,
+        {'1B':AT.first,'RF':AT.backFirst},'After the pitch C fires behind the runner at 1st');
+    add('Pickoffs and wild pitches','Back-pick: C to 3rd',[3],1,null,
+        {'3B':AT.third,'LF':AT.backThird},'C fires to 3B behind the runner — LF backs up');
+    add('Pickoffs and wild pitches','Wild pitch: R3 breaks home',[3],0,pt(452,922),
+        {'C':pt(452,922),'P':AT.home},'C finds the ball FAST → P sprints to cover home → tag');
+    add('Pickoffs and wild pitches','Passed ball: R1 takes 2nd',[1],0,pt(548,922),
+        {'C':pt(548,922),'SS':AT.second},'C retrieves → only throw if you can get him — SS covers');
+
+    /* Team positioning */
+    var INF4=['3B','SS','2B','1B'];
+    var mvIn={}; INF4.forEach(function(f){mvIn[f]=lerp(defaultOf(f),HOME,0.22);});
+    add('Team positioning','Infield IN (cut the run at home)',[3],1,null,mvIn,'Everyone on the grass — throw HOME on contact');
+    var mvDP={'SS':lerp(defaultOf('SS'),AT.second,0.35),'2B':lerp(defaultOf('2B'),AT.second,0.35)};
+    add('Team positioning','Double-play depth',[1],0,null,mvDP,'Middle infield pinches toward 2nd — two steps in, two steps over');
+    var mvCor={'3B':lerp(defaultOf('3B'),HOME,0.3),'1B':lerp(defaultOf('1B'),HOME,0.3)};
+    add('Team positioning','Corners in (bunt watch)',[1],0,null,mvCor,'1B and 3B creep in — CHARGE on the bunt');
+    var mvDeep={}; ['LF','CF','RF'].forEach(function(f){mvDeep[f]=beyond(OFD[f],52);});
+    add('Team positioning','No-doubles defense (OF deep)',[],2,null,mvDeep,'Outfield deep — nothing gets over your head');
+    var mvSh={}; ['LF','CF','RF'].forEach(function(f){mvSh[f]=lerp(OFD[f],HOME,0.18);});
+    add('Team positioning','Outfield shallow (weak hitter)',[],0,null,mvSh,'Play in — take away the bloop hits');
+    var mvRt={}; ['LF','CF','RF','SS','2B'].forEach(function(f){var d=defaultOf(f);mvRt[f]=cp(pt(d.x-46,d.y));});
+    add('Team positioning','Shade for a righty pull hitter',[],0,null,mvRt,'Everybody two big steps toward LEFT field');
+    var mvLt={}; ['LF','CF','RF','SS','2B'].forEach(function(f){var d=defaultOf(f);mvLt[f]=cp(pt(d.x+46,d.y));});
+    add('Team positioning','Shade for a lefty pull hitter',[],0,null,mvLt,'Everybody two big steps toward RIGHT field');
+  })();
+  /* ---------- end expanded library ---------- */
+
   var sel=document.getElementById('presets');
   var groups={};
   PRESETS.forEach(function(pre,idx){
@@ -615,7 +888,7 @@
   });
 
   /* ---------- animation ---------- */
-  var currentSituation=null, animRAF=null;
+  var currentSituation=null, animRAF=null, curIndex=-1;
   function stopAnim(){ if(animRAF){ cancelAnimationFrame(animRAF); animRAF=null; } }
   function animateMovers(movers){
     stopAnim();
@@ -649,7 +922,7 @@
       movers.push({f:f,x0:d.x,y0:d.y,x1:t.x,y1:t.y});
     });
     renderRunners(); renderOuts(); renderBall(); renderArrows();
-    cueEl.textContent = CUES[pre.name] || pre.name || '';
+    cueEl.textContent = CUES[pre.name] || pre.cue || pre.name || '';
     cueEl.classList.toggle('show', !!cueEl.textContent);
     if(animate){ animateMovers(movers); }
     else { movers.forEach(function(m){ m.f.x=m.x1; m.f.y=m.y1; setFielderPos(m.f); }); }
@@ -658,12 +931,17 @@
 
   sel.addEventListener('change',function(){
     if(sel.value==='') return;
-    loadSituation(PRESETS[Number(sel.value)], true);
+    curIndex=Number(sel.value);
+    loadSituation(PRESETS[curIndex], true);
     sel.selectedIndex=0;            // keep the control compact ("Load…")
     try{ sel.blur(); }catch(_){}
   });
   document.getElementById('replayBtn').addEventListener('click',function(){
     if(currentSituation) loadSituation(currentSituation, true);
+  });
+  document.getElementById('nextBtn').addEventListener('click',function(){
+    curIndex=(curIndex+1)%PRESETS.length;
+    loadSituation(PRESETS[curIndex], true);
   });
 
   /* ---------- reset / clear ---------- */
@@ -679,9 +957,25 @@
     arrows=[]; renderArrows();
   });
 
+  /* ---------- fit field to screen (kill letterboxing) ---------- */
+  var stageEl=document.querySelector('.stage');
+  var CONTENT={x:190,y:172,w:620,h:794};
+  function fitView(){
+    var r=stageEl.getBoundingClientRect();
+    if(r.width<20||r.height<20) return;
+    var ar=r.width/r.height, x=CONTENT.x, y=CONTENT.y, w=CONTENT.w, h=CONTENT.h;
+    if(ar > w/h){ var nw=h*ar; x-=(nw-w)/2; w=nw; }
+    else { var nh=w/ar; y-=(nh-h)*0.42; h=nh; }
+    svg.setAttribute('viewBox', x.toFixed(1)+' '+y.toFixed(1)+' '+w.toFixed(1)+' '+h.toFixed(1));
+  }
+  window.addEventListener('resize', fitView);
+  window.addEventListener('orientationchange', fitView);
+  if(window.ResizeObserver){ new ResizeObserver(fitView).observe(stageEl); }
+
   /* ---------- init ---------- */
   buildFielders();
   renderRunners(); renderBall(); renderArrows(); renderOuts();
+  fitView();
 })();
 </script>
 </body>
