@@ -1,529 +1,455 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Situation Board</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Baseball Situation Board</title>
 <style>
   :root{
-    --navy:#13233f;
-    --navy-dark:#0d1b2a;
-    --gold:#f4b400;
-    --grass:#2f8f3f;
-    --grass-dark:#2a7f38;
-    --dirt:#c2915b;
-    --line:#f5f5f5;
+    --bg:#0d141c;
+    --panel:#16202b;
+    --panel-2:#1e2b38;
+    --line:#2a3a49;
+    --ink:#eaf1f6;
+    --muted:#8fa3b3;
+    --accent:#e8a33d;      /* infield clay */
+    --accent-red:#d7263d;  /* baseball red */
+    --field-navy:#16243d;
+    --runner:#ef6a2b;
+    --chalk:#ffffff;
+    --radius:14px;
+    --tap:46px;
   }
-  html,body{
-    margin:0;
-    padding:0;
-    height:100%;
-    width:100%;
-    background:var(--navy-dark);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;overscroll-behavior:none;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;flex-direction:column;
     overflow:hidden;
-    overscroll-behavior:none;
-    position:fixed;
-    touch-action:none;
   }
-  #app{
-    display:flex;
-    flex-direction:column;
-    height:100%;
-    width:100%;
-  }
+
+  /* ---------- Scoreboard header ---------- */
   header{
-    flex:0 0 auto;
-    padding:10px 14px 2px;
-    color:#fff;
-    text-align:center;
+    background:linear-gradient(180deg,#101922,#0d141c);
+    border-bottom:1px solid var(--line);
+    padding:10px 12px;
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
   }
-  header h1{
-    margin:0;
-    font-size:20px;
-    letter-spacing:0.5px;
+  .board{
+    display:flex;align-items:center;gap:12px;flex:1 1 340px;min-width:280px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:8px 12px;
   }
-  header p{
-    margin:2px 0 0;
-    font-size:12px;
-    color:#9fb0c9;
+  .board .situation{flex:1;min-width:140px;}
+  .board .situation label{
+    display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:2px;
   }
-  #toolbar{
-    flex:0 0 auto;
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    align-items:center;
-    padding:8px 10px;
-    background:var(--navy);
-    border-bottom:2px solid #0a1626;
+  #situationText{
+    width:100%;background:transparent;border:none;color:var(--ink);
+    font-size:16px;font-weight:700;letter-spacing:.01em;padding:2px 0;
+    outline:none;
   }
-  #toolbar button, #toolbar select{
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-    border:none;
-    border-radius:8px;
-    padding:10px 14px;
-    font-size:14px;
-    font-weight:600;
-    cursor:pointer;
-    background:#1e3357;
-    color:#fff;
+  #situationText::placeholder{color:#5b6f7f;font-weight:600;}
+
+  .outs{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:6px 12px;cursor:pointer;user-select:none;min-width:64px;
   }
-  #toolbar button:active{ background:#2a4675; }
-  #toolbar button.active{
-    background:var(--gold);
-    color:#20304f;
+  .outs .k{font-size:10px;letter-spacing:.16em;color:var(--muted);}
+  .outs .num{font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+  .outs .dots{display:flex;gap:5px;margin-top:3px;}
+  .outs .dot{width:9px;height:9px;border-radius:50%;background:#33465a;}
+  .outs .dot.on{background:var(--accent-red);box-shadow:0 0 6px rgba(215,38,61,.7);}
+
+  .mini{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .mini .k{font-size:10px;letter-spacing:.16em;color:var(--muted);}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1 1 100%;
   }
-  #toolbar button.danger{ background:#7a2323; }
-  #toolbar button.danger:active{ background:#932c2c; }
-  #toolbar select{
-    background:#1e3357;
-    color:#fff;
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px;}
+  .seg button{
+    border:none;background:transparent;color:var(--muted);
+    font-size:13px;font-weight:700;letter-spacing:.02em;
+    padding:8px 14px;border-radius:9px;min-height:var(--tap);cursor:pointer;
   }
-  #toolbar .spacer{ flex:1 1 auto; }
-  #field-wrap{
-    flex:1 1 auto;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-    touch-action:none;
-    min-height:0;
-    padding:6px;
-    box-sizing:border-box;
+  .seg button.active{background:var(--accent);color:#241a08;box-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .seg button[data-tool="arrow"].active{background:#ffd54a;color:#2a2100;}
+
+  .btn{
+    border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    font-size:13px;font-weight:600;padding:0 14px;height:var(--tap);border-radius:11px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
   }
-  #field{
-    width:100%;
-    height:100%;
-    max-width:1200px;
-    touch-action:none;
-    user-select:none;
-    -webkit-user-select:none;
-    -webkit-touch-callout:none;
+  .btn:active{transform:translateY(1px);}
+  .btn.ghost{color:var(--muted);}
+  select.btn{padding-right:10px;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 20px,calc(100% - 11px) 20px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px;}
+  .hint{font-size:12px;color:var(--muted);flex:1 1 100%;line-height:1.4;}
+  .hint b{color:#cdd8e1;font-weight:700;}
+
+  /* ---------- Field ---------- */
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px;touch-action:none;}
+  svg#field{width:100%;height:100%;touch-action:none;display:block;
+    filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));}
+  svg#field *{touch-action:none;}
+  .fielder{cursor:grab;}
+  .fielder:active{cursor:grabbing;}
+  /* overlays must not intercept taps meant for bases/grass/players */
+  #runnersLayer,#ballLayer,#arrowsLayer,#previewLayer{pointer-events:none;}
+  text{user-select:none;-webkit-user-select:none;}
+
+  @media (max-width:560px){
+    #situationText{font-size:15px;}
+    .hint{display:none;}
   }
-  .player{ cursor:grab; touch-action:none; }
-  .player:active{ cursor:grabbing; }
-  .player circle.body{ stroke:#fff; stroke-width:2; }
-  .player text{
-    fill:#fff;
-    font-size:15px;
-    font-weight:700;
-    text-anchor:middle;
-    dominant-baseline:central;
-    pointer-events:none;
-    user-select:none;
-  }
-  .base-hit{ cursor:pointer; touch-action:none; }
-  .runner{ pointer-events:none; }
-  .runner text{
-    fill:#20304f;
-    font-size:11px;
-    font-weight:800;
-    text-anchor:middle;
-    dominant-baseline:central;
-  }
-  #outs-badge{ cursor:pointer; touch-action:none; }
-  .arrow{
-    stroke:#e63946;
-    stroke-width:5;
-    stroke-linecap:round;
-    fill:none;
-  }
-  #grass-bg{ touch-action:none; }
-  #ball-mark{ pointer-events:none; }
-  .field-label{
-    font-size:11px;
-    fill:#eaf3ea;
-    opacity:0.85;
-    text-anchor:middle;
-    pointer-events:none;
-    user-select:none;
-  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <h1>&#9918; Situation Board</h1>
-    <p>Drag players &bull; Tap a base for a runner &bull; Tap grass to drop the ball &bull; Tap OUTS to cycle</p>
-  </header>
 
-  <div id="toolbar">
-    <button id="btn-draw" type="button">&#9998; Draw Arrows</button>
-    <button id="btn-clear" type="button">Clear Drawing</button>
-    <select id="preset-select">
-      <option value="">Preset Situation&hellip;</option>
+<header>
+  <div class="board">
+    <div class="situation">
+      <label for="situationText">Situation</label>
+      <input id="situationText" type="text" placeholder="Type a play, e.g. Fly ball to RF, runner on 2nd" />
+    </div>
+
+    <div class="mini">
+      <div class="k">BASES</div>
+      <svg width="42" height="42" viewBox="0 0 42 42" id="miniBases" aria-hidden="true">
+        <rect id="mb-home" x="17" y="30" width="8" height="8" rx="1.5" transform="rotate(45 21 34)" fill="none" stroke="#4a5e70" stroke-width="1.5"/>
+        <rect id="mb-1"   x="30" y="17" width="9" height="9" rx="1.5" transform="rotate(45 34.5 21.5)" fill="#33465a"/>
+        <rect id="mb-2"   x="16.5" y="4" width="9" height="9" rx="1.5" transform="rotate(45 21 8.5)" fill="#33465a"/>
+        <rect id="mb-3"   x="3" y="17" width="9" height="9" rx="1.5" transform="rotate(45 7.5 21.5)" fill="#33465a"/>
+      </svg>
+    </div>
+
+    <div class="outs" id="outsBox" role="button" tabindex="0" title="Tap to change outs">
+      <div class="k">OUTS</div>
+      <div class="num" id="outsNum">0</div>
+      <div class="dots"><span class="dot" data-i="0"></span><span class="dot" data-i="1"></span></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="Tool">
+      <button data-tool="move" class="active">Move players</button>
+      <button data-tool="arrow">Draw arrow</button>
+    </div>
+    <select class="btn" id="presets" aria-label="Load a situation">
+      <option value="">Load a situation…</option>
     </select>
-    <div class="spacer"></div>
-    <button id="btn-reset" class="danger" type="button">Reset</button>
+    <button class="btn" id="resetPlayers">Reset players</button>
+    <button class="btn ghost" id="clearBall">Clear ball</button>
+    <button class="btn ghost" id="clearArrows">Clear arrows</button>
+    <button class="btn ghost" id="clearAll">Clear all</button>
+    <div class="hint">
+      <b>Drag</b> a player to move him &nbsp;•&nbsp; <b>Tap a base</b> to put a runner on &nbsp;•&nbsp;
+      <b>Tap the grass</b> to drop the ball &nbsp;•&nbsp; Switch to <b>Draw arrow</b> to show where he goes.
+    </div>
   </div>
+</header>
 
-  <div id="field-wrap">
-    <svg id="field" viewBox="0 0 720 960" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5"
-          markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="#e63946"></path>
-        </marker>
-        <linearGradient id="grassStripes" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="var(--grass)"></stop>
-          <stop offset="1" stop-color="var(--grass-dark)"></stop>
-        </linearGradient>
-      </defs>
+<div class="stage">
+  <svg id="field" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-label="Baseball field">
+    <defs>
+      <clipPath id="fairClip">
+        <path d="M 500 880 L 5 385 A 700 700 0 0 1 995 385 Z"/>
+      </clipPath>
+      <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 L3,5 z" fill="#ffd54a" stroke="#7a5c00" stroke-width="0.6"/>
+      </marker>
+      <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
+      </filter>
+    </defs>
 
-      <!-- Grass background (also the tap target for placing the ball / drawing arrows) -->
-      <rect id="grass-bg" x="0" y="0" width="720" height="960" fill="var(--grass)"></rect>
-      <!-- mowed stripes for texture (decorative, non-interactive) -->
-      <g pointer-events="none" opacity="0.10">
-        <rect x="0" y="0" width="72" height="960" fill="#000"></rect>
-        <rect x="144" y="0" width="72" height="960" fill="#000"></rect>
-        <rect x="288" y="0" width="72" height="960" fill="#000"></rect>
-        <rect x="432" y="0" width="72" height="960" fill="#000"></rect>
-        <rect x="576" y="0" width="72" height="960" fill="#000"></rect>
-      </g>
+    <!-- beyond the fence -->
+    <rect x="0" y="0" width="1000" height="1000" fill="#0d141c"/>
 
-      <!-- Outfield fence arc (decorative) -->
-      <path d="M 54,960 A 575,575 0 0 1 666,960" fill="none" stroke="#e9e9e9" stroke-width="4" stroke-dasharray="2 10" opacity="0.6" pointer-events="none"></path>
+    <!-- fair territory grass + warning track + mow rings (clipped to the fair wedge) -->
+    <g clip-path="url(#fairClip)">
+      <circle cx="500" cy="880" r="700" fill="#c68a4e"/> <!-- warning track base -->
+      <g id="grassRings"></g>
+    </g>
 
-      <!-- Foul lines -->
-      <g pointer-events="none">
-        <line x1="360" y1="896" x2="673" y2="339" stroke="var(--line)" stroke-width="4"></line>
-        <line x1="360" y1="896" x2="47" y2="339" stroke="var(--line)" stroke-width="4"></line>
-      </g>
+    <!-- fence -->
+    <path d="M 5 385 A 700 700 0 0 1 995 385" fill="none" stroke="#12331f" stroke-width="10" stroke-linecap="round"/>
+    <path d="M 5 385 A 700 700 0 0 1 995 385" fill="none" stroke="#eecb59" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
 
-      <!-- Infield dirt -->
-      <polygon points="360,957 506,637 360,376 214,637" fill="var(--dirt)" stroke="#a97a45" stroke-width="2" pointer-events="none"></polygon>
+    <!-- infield skin (dirt diamond) -->
+    <path d="M 500 912 L 742 670 L 500 428 L 258 670 Z"
+          fill="#c0824a" stroke="#a56a37" stroke-width="4" stroke-linejoin="round"/>
+    <!-- home dirt circle -->
+    <circle cx="500" cy="880" r="52" fill="#c0824a"/>
+    <!-- pitcher mound -->
+    <circle cx="500" cy="662" r="34" fill="#cf9558"/>
+    <rect x="487" y="658" width="26" height="8" rx="2" fill="#f2f4f6"/>
 
-      <!-- Base paths (dirt strips) -->
-      <g stroke="var(--dirt)" stroke-width="14" opacity="0.9" pointer-events="none">
-        <line x1="360" y1="896" x2="464" y2="710"></line>
-        <line x1="464" y1="710" x2="360" y2="525"></line>
-        <line x1="360" y1="525" x2="256" y2="710"></line>
-        <line x1="256" y1="710" x2="360" y2="896"></line>
-      </g>
+    <!-- foul lines -->
+    <line x1="500" y1="880" x2="995" y2="385" stroke="#ffffff" stroke-width="4"/>
+    <line x1="500" y1="880" x2="5"   y2="385" stroke="#ffffff" stroke-width="4"/>
 
-      <!-- Pitcher's mound -->
-      <g pointer-events="none">
-        <circle cx="360" cy="720" r="33" fill="var(--dirt)" stroke="#a97a45" stroke-width="2"></circle>
-        <rect x="353" y="714" width="14" height="10" fill="#f5f5f5"></rect>
-      </g>
+    <!-- bases -->
+    <rect x="698" y="658" width="24" height="24" rx="2" transform="rotate(45 710 670)" fill="#fff" stroke="#d7dde2"/>
+    <rect x="488" y="448" width="24" height="24" rx="2" transform="rotate(45 500 460)" fill="#fff" stroke="#d7dde2"/>
+    <rect x="278" y="658" width="24" height="24" rx="2" transform="rotate(45 290 670)" fill="#fff" stroke="#d7dde2"/>
+    <!-- home plate -->
+    <path d="M 486 866 L 514 866 L 514 884 L 500 896 L 486 884 Z" fill="#fff" stroke="#d7dde2"/>
 
-      <!-- Bases (tap targets) -->
-      <g id="bases-layer">
-        <g class="base-hit" data-base="first">
-          <rect x="-16" y="-16" width="32" height="32" transform="translate(464,710) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
-          <circle cx="464" cy="710" r="28" fill="transparent"></circle>
-        </g>
-        <g class="base-hit" data-base="second">
-          <rect x="-16" y="-16" width="32" height="32" transform="translate(360,525) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
-          <circle cx="360" cy="525" r="28" fill="transparent"></circle>
-        </g>
-        <g class="base-hit" data-base="third">
-          <rect x="-16" y="-16" width="32" height="32" transform="translate(256,710) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
-          <circle cx="256" cy="710" r="28" fill="transparent"></circle>
-        </g>
-      </g>
+    <!-- interactive base tap zones (above field, below players) -->
+    <g id="baseZones">
+      <circle data-base="1" cx="710" cy="670" r="46" fill="transparent"/>
+      <circle data-base="2" cx="500" cy="460" r="46" fill="transparent"/>
+      <circle data-base="3" cx="290" cy="670" r="46" fill="transparent"/>
+    </g>
 
-      <!-- Home plate -->
-      <g pointer-events="none">
-        <polygon points="349,880 371,880 371,896 360,912 349,896" fill="var(--line)" stroke="#333" stroke-width="1.5"></polygon>
-      </g>
-
-      <!-- Drawing layer for arrows -->
-      <g id="arrows-layer"></g>
-
-      <!-- Runner markers (hidden until toggled on) -->
-      <g id="runners-layer">
-        <g class="runner" id="runner-first" transform="translate(464,710)" style="display:none">
-          <circle r="14" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
-          <text y="0">R</text>
-        </g>
-        <g class="runner" id="runner-second" transform="translate(360,525)" style="display:none">
-          <circle r="14" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
-          <text y="0">R</text>
-        </g>
-        <g class="runner" id="runner-third" transform="translate(256,710)" style="display:none">
-          <circle r="14" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
-          <text y="0">R</text>
-        </g>
-      </g>
-
-      <!-- Ball -->
-      <g id="ball-mark" transform="translate(360,800)">
-        <circle r="10" fill="#ffffff" stroke="#333" stroke-width="1.5"></circle>
-        <path d="M -5,-4 Q 0,0 -5,4 M 5,-4 Q 0,0 5,4" stroke="#c0392b" stroke-width="1" fill="none"></path>
-      </g>
-
-      <!-- Defensive players (draggable) -->
-      <g id="players-layer"></g>
-
-      <!-- Outs indicator badge -->
-      <g id="outs-badge" transform="translate(20,20)">
-        <rect x="0" y="0" width="110" height="56" rx="10" fill="var(--navy)" stroke="#fff" stroke-width="1.5"></rect>
-        <text x="55" y="17" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">OUTS</text>
-        <circle id="out-light-1" cx="38" cy="39" r="10" fill="#3a4a6b" stroke="#fff" stroke-width="1.5"></circle>
-        <circle id="out-light-2" cx="72" cy="39" r="10" fill="#3a4a6b" stroke="#fff" stroke-width="1.5"></circle>
-      </g>
-    </svg>
-  </div>
+    <!-- dynamic layers -->
+    <g id="arrowsLayer"></g>
+    <g id="previewLayer"></g>
+    <g id="runnersLayer"></g>
+    <g id="ballLayer"></g>
+    <g id="fieldersLayer"></g>
+  </svg>
 </div>
 
 <script>
 (function(){
   "use strict";
-  var SVG_NS = "http://www.w3.org/2000/svg";
-  var svg = document.getElementById("field");
-  var playersLayer = document.getElementById("players-layer");
-  var arrowsLayer = document.getElementById("arrows-layer");
-  var grassBg = document.getElementById("grass-bg");
-  var ballMark = document.getElementById("ball-mark");
 
-  var PAD_X = 20, PAD_Y = 20, MAX_X = 700, MAX_Y = 945;
-  var PLAYER_R = 21;
+  var svg = document.getElementById('field');
+  var NS = "http://www.w3.org/2000/svg";
 
-  var DEFAULT_PLAYERS = {
-    P:  {x:360, y:720, color:"#7a2323"},
-    C:  {x:360, y:928, color:"#7a2323"},
-    "1B": {x:450, y:656, color:"#1e3357"},
-    "2B": {x:414, y:560, color:"#1e3357"},
-    SS: {x:306, y:560, color:"#1e3357"},
-    "3B": {x:270, y:656, color:"#1e3357"},
-    LF: {x:153, y:368, color:"#2d5a2d"},
-    CF: {x:360, y:224, color:"#2d5a2d"},
-    RF: {x:567, y:368, color:"#2d5a2d"}
-  };
-  var DEFAULT_BALL = {x:360, y:800};
+  /* ---------- geometry ---------- */
+  var HOME={x:500,y:880}, FIRST={x:710,y:670}, SECOND={x:500,y:460}, THIRD={x:290,y:670};
+  var BASE_XY={1:FIRST,2:SECOND,3:THIRD};
 
-  var players = {};
-  var runners = {first:false, second:false, third:false};
-  var outs = 0;
-  var drawMode = false;
-
-  var dragTarget = null;   // {el, state}
-  var drawingArrow = null; // {line}
-  var pendingTap = null;   // {type, key, x0, y0}
-
-  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-
-  function svgPoint(evt){
-    var pt = svg.createSVGPoint();
-    pt.x = evt.clientX;
-    pt.y = evt.clientY;
-    var ctm = svg.getScreenCTM().inverse();
-    return pt.matrixTransform(ctm);
+  /* ---------- mow rings ---------- */
+  var rings=document.getElementById('grassRings');
+  var A="#2f7d3c", B="#37913f", i=0;
+  for(var r=660;r>=60;r-=66){
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',500);c.setAttribute('cy',880);c.setAttribute('r',r);
+    c.setAttribute('fill', (i%2===0)?A:B);
+    rings.appendChild(c); i++;
   }
 
-  // ---------- Players ----------
-  function buildPlayers(){
-    playersLayer.innerHTML = "";
-    players = {};
-    Object.keys(DEFAULT_PLAYERS).forEach(function(id){
-      var d = DEFAULT_PLAYERS[id];
-      players[id] = {x:d.x, y:d.y};
-
-      var g = document.createElementNS(SVG_NS, "g");
-      g.setAttribute("class", "player");
-      g.setAttribute("data-id", id);
-      g.setAttribute("transform", "translate(" + d.x + "," + d.y + ")");
-
-      var circle = document.createElementNS(SVG_NS, "circle");
-      circle.setAttribute("class", "body");
-      circle.setAttribute("r", PLAYER_R);
-      circle.setAttribute("fill", d.color);
-
-      var text = document.createElementNS(SVG_NS, "text");
-      text.textContent = id;
-
-      g.appendChild(circle);
-      g.appendChild(text);
-      playersLayer.appendChild(g);
-
-      g.addEventListener("pointerdown", function(e){
-        if (drawMode) return;
-        e.preventDefault();
-        e.stopPropagation();
-        g.setPointerCapture(e.pointerId);
-        dragTarget = { el:g, state:players[id] };
-      });
-    });
-  }
-
-  // ---------- Runners ----------
-  function toggleRunner(key){
-    runners[key] = !runners[key];
-    document.getElementById("runner-" + key).style.display = runners[key] ? "" : "none";
-  }
-  function setRunners(state){
-    runners.first = !!state.first;
-    runners.second = !!state.second;
-    runners.third = !!state.third;
-    document.getElementById("runner-first").style.display = runners.first ? "" : "none";
-    document.getElementById("runner-second").style.display = runners.second ? "" : "none";
-    document.getElementById("runner-third").style.display = runners.third ? "" : "none";
-  }
-
-  document.querySelectorAll(".base-hit").forEach(function(el){
-    var key = el.getAttribute("data-base");
-    el.addEventListener("pointerdown", function(e){
-      if (drawMode) return;
-      e.preventDefault();
-      e.stopPropagation();
-      el.setPointerCapture(e.pointerId);
-      var p = svgPoint(e);
-      pendingTap = { type:"base", key:key, x0:p.x, y0:p.y };
-    });
-  });
-
-  // ---------- Outs ----------
-  function renderOuts(){
-    document.getElementById("out-light-1").setAttribute("fill", outs >= 1 ? "#e63946" : "#3a4a6b");
-    document.getElementById("out-light-2").setAttribute("fill", outs >= 2 ? "#e63946" : "#3a4a6b");
-  }
-  function cycleOuts(){
-    outs = (outs + 1) % 3;
-    renderOuts();
-  }
-  var outsBadge = document.getElementById("outs-badge");
-  outsBadge.addEventListener("pointerdown", function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    outsBadge.setPointerCapture(e.pointerId);
-    var p = svgPoint(e);
-    pendingTap = { type:"outs", x0:p.x, y0:p.y };
-  });
-
-  // ---------- Ball ----------
-  function placeBall(x, y){
-    x = clamp(x, PAD_X, MAX_X);
-    y = clamp(y, PAD_Y, MAX_Y);
-    ballMark.setAttribute("transform", "translate(" + x + "," + y + ")");
-  }
-
-  // ---------- Grass: ball placement (tap) or arrow drawing (drag, draw mode) ----------
-  grassBg.addEventListener("pointerdown", function(e){
-    var p = svgPoint(e);
-    e.preventDefault();
-    grassBg.setPointerCapture(e.pointerId);
-    if (drawMode){
-      var line = document.createElementNS(SVG_NS, "line");
-      line.setAttribute("class", "arrow");
-      line.setAttribute("x1", p.x);
-      line.setAttribute("y1", p.y);
-      line.setAttribute("x2", p.x);
-      line.setAttribute("y2", p.y);
-      line.setAttribute("marker-end", "url(#arrowhead)");
-      arrowsLayer.appendChild(line);
-      drawingArrow = { line:line };
-    } else {
-      pendingTap = { type:"grass", x0:p.x, y0:p.y };
-    }
-  });
-
-  // ---------- Shared pointermove / pointerup ----------
-  svg.addEventListener("pointermove", function(e){
-    if (dragTarget){
-      var p = svgPoint(e);
-      var x = clamp(p.x, PAD_X, MAX_X);
-      var y = clamp(p.y, PAD_Y, MAX_Y);
-      dragTarget.state.x = x;
-      dragTarget.state.y = y;
-      dragTarget.el.setAttribute("transform", "translate(" + x + "," + y + ")");
-    } else if (drawingArrow){
-      var p2 = svgPoint(e);
-      drawingArrow.line.setAttribute("x2", p2.x);
-      drawingArrow.line.setAttribute("y2", p2.y);
-    }
-  });
-
-  function onPointerUp(e){
-    if (dragTarget){ dragTarget = null; return; }
-    if (drawingArrow){
-      var line = drawingArrow.line;
-      var dx = parseFloat(line.getAttribute("x2")) - parseFloat(line.getAttribute("x1"));
-      var dy = parseFloat(line.getAttribute("y2")) - parseFloat(line.getAttribute("y1"));
-      if (Math.hypot(dx, dy) < 12) line.remove();
-      drawingArrow = null;
-      return;
-    }
-    if (pendingTap){
-      var p = svgPoint(e);
-      var dist = Math.hypot(p.x - pendingTap.x0, p.y - pendingTap.y0);
-      if (dist < 10){
-        if (pendingTap.type === "base") toggleRunner(pendingTap.key);
-        else if (pendingTap.type === "outs") cycleOuts();
-        else if (pendingTap.type === "grass") placeBall(pendingTap.x0, pendingTap.y0);
-      }
-      pendingTap = null;
-    }
-  }
-  svg.addEventListener("pointerup", onPointerUp);
-  svg.addEventListener("pointercancel", onPointerUp);
-
-  // ---------- Draw-arrow mode toggle ----------
-  var btnDraw = document.getElementById("btn-draw");
-  btnDraw.addEventListener("click", function(){
-    drawMode = !drawMode;
-    btnDraw.classList.toggle("active", drawMode);
-  });
-
-  // ---------- Clear drawing ----------
-  document.getElementById("btn-clear").addEventListener("click", function(){
-    arrowsLayer.innerHTML = "";
-  });
-
-  // ---------- Reset ----------
-  document.getElementById("btn-reset").addEventListener("click", function(){
-    buildPlayers();
-    setRunners({first:false, second:false, third:false});
-    outs = 0;
-    renderOuts();
-    placeBall(DEFAULT_BALL.x, DEFAULT_BALL.y);
-    arrowsLayer.innerHTML = "";
-    drawMode = false;
-    btnDraw.classList.remove("active");
-    document.getElementById("preset-select").value = "";
-  });
-
-  // ---------- Preset situations ----------
-  var PRESETS = [
-    { label:"Bases Empty",           runners:{first:false, second:false, third:false}, outs:0 },
-    { label:"Runner on 1st",         runners:{first:true,  second:false, third:false}, outs:0 },
-    { label:"Runner on 2nd",         runners:{first:false, second:true,  third:false}, outs:0 },
-    { label:"Runner on 3rd",         runners:{first:false, second:false, third:true }, outs:0 },
-    { label:"Runners on 1st & 2nd",  runners:{first:true,  second:true,  third:false}, outs:0 },
-    { label:"Runners on 1st & 3rd",  runners:{first:true,  second:false, third:true }, outs:0 },
-    { label:"Runners on 2nd & 3rd",  runners:{first:false, second:true,  third:true }, outs:1 },
-    { label:"Bases Loaded",          runners:{first:true,  second:true,  third:true }, outs:0 },
-    { label:"Bases Loaded, 1 Out",   runners:{first:true,  second:true,  third:true }, outs:1 },
-    { label:"Bases Loaded, 2 Outs",  runners:{first:true,  second:true,  third:true }, outs:2 },
-    { label:"1st & 2nd, 1 Out",      runners:{first:true,  second:true,  third:false}, outs:1 },
-    { label:"Runner on 3rd, 1 Out (Infield In)", runners:{first:false, second:false, third:true}, outs:1 }
+  /* ---------- state ---------- */
+  var fielders=[
+    {id:'LF',x:300,y:335},{id:'CF',x:500,y:262},{id:'RF',x:700,y:335},
+    {id:'SS',x:400,y:560},{id:'2B',x:600,y:560},
+    {id:'3B',x:302,y:634},{id:'1B',x:698,y:634},
+    {id:'P',x:500,y:662},{id:'C',x:500,y:928}
   ];
-  var presetSelect = document.getElementById("preset-select");
-  PRESETS.forEach(function(p, i){
-    var opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = p.label;
-    presetSelect.appendChild(opt);
-  });
-  presetSelect.addEventListener("change", function(){
-    if (presetSelect.value === "") return;
-    var p = PRESETS[parseInt(presetSelect.value, 10)];
-    setRunners(p.runners);
-    outs = p.outs;
-    renderOuts();
-  });
+  var defaults=fielders.map(function(f){return {id:f.id,x:f.x,y:f.y};});
+  var runners={1:false,2:false,3:false};
+  var outs=0;
+  var ball=null;              // {x,y}
+  var arrows=[];              // {x1,y1,x2,y2}
+  var tool='move';           // 'move' | 'arrow'
 
-  // ---------- No-scroll safety net for tablets ----------
-  document.addEventListener("touchmove", function(e){
+  /* ---------- helpers ---------- */
+  function el(tag,attrs){
+    var n=document.createElementNS(NS,tag);
+    for(var k in attrs){ n.setAttribute(k,attrs[k]); }
+    return n;
+  }
+  function clamp(v){ return Math.max(28,Math.min(972,v)); }
+  function toSvg(evt){
+    var pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
+    var p=pt.matrixTransform(svg.getScreenCTM().inverse());
+    return {x:p.x,y:p.y};
+  }
+
+  /* ---------- fielders ---------- */
+  var fLayer=document.getElementById('fieldersLayer');
+  function buildFielders(){
+    fLayer.textContent='';
+    fielders.forEach(function(f){
+      var g=el('g',{'class':'fielder','data-fielder':f.id,'transform':'translate('+f.x+','+f.y+')','filter':'url(#soft)'});
+      g.appendChild(el('circle',{r:36,fill:'transparent'})); // bigger grab target
+      g.appendChild(el('circle',{r:27,fill:'#16243d',stroke:'#fff','stroke-width':2.5}));
+      var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#fff','font-size':'19','font-weight':'800','font-family':'system-ui,sans-serif','letter-spacing':'0.5'});
+      t.textContent=f.id; g.appendChild(t);
+      f.node=g; fLayer.appendChild(g);
+    });
+  }
+  function setFielderPos(f){ f.node.setAttribute('transform','translate('+f.x+','+f.y+')'); }
+  function getFielder(id){ for(var j=0;j<fielders.length;j++){ if(fielders[j].id===id) return fielders[j]; } return null; }
+
+  /* ---------- runners ---------- */
+  var rLayer=document.getElementById('runnersLayer');
+  function renderRunners(){
+    rLayer.textContent='';
+    for(var b=1;b<=3;b++){
+      if(!runners[b]) continue;
+      var base=BASE_XY[b];
+      var dx=HOME.x-base.x, dy=HOME.y-base.y, len=Math.hypot(dx,dy);
+      var ox=base.x+dx/len*20, oy=base.y+dy/len*20;
+      var g=el('g',{'transform':'translate('+ox+','+oy+')','filter':'url(#soft)'});
+      g.appendChild(el('circle',{r:19,fill:'#ef6a2b',stroke:'#fff','stroke-width':2.5}));
+      var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#fff','font-size':'15','font-weight':'800','font-family':'system-ui'});
+      t.textContent='R'; g.appendChild(t);
+      rLayer.appendChild(g);
+    }
+    // mini scoreboard bases
+    document.getElementById('mb-1').setAttribute('fill',runners[1]?'#ef6a2b':'#33465a');
+    document.getElementById('mb-2').setAttribute('fill',runners[2]?'#ef6a2b':'#33465a');
+    document.getElementById('mb-3').setAttribute('fill',runners[3]?'#ef6a2b':'#33465a');
+  }
+  function toggleRunner(b){ runners[b]=!runners[b]; renderRunners(); }
+
+  /* ---------- ball ---------- */
+  var bLayer=document.getElementById('ballLayer');
+  function renderBall(){
+    bLayer.textContent='';
+    if(!ball) return;
+    var g=el('g',{'transform':'translate('+ball.x+','+ball.y+')','filter':'url(#soft)'});
+    g.appendChild(el('circle',{r:13,fill:'#fff',stroke:'#c9ccd1','stroke-width':1}));
+    g.appendChild(el('path',{d:'M -7 -6 A 11 11 0 0 1 -7 6',fill:'none',stroke:'#d7263d','stroke-width':1.6}));
+    g.appendChild(el('path',{d:'M 7 -6 A 11 11 0 0 0 7 6',fill:'none',stroke:'#d7263d','stroke-width':1.6}));
+    bLayer.appendChild(g);
+  }
+  function setBall(p){ ball={x:clamp(p.x),y:clamp(p.y)}; renderBall(); }
+
+  /* ---------- arrows ---------- */
+  var aLayer=document.getElementById('arrowsLayer');
+  var pLayer=document.getElementById('previewLayer');
+  function arrowNode(a,preview){
+    var g=el('g',{});
+    g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#3a2e00','stroke-width':8,'stroke-linecap':'round',opacity:preview?0.4:0.55}));
+    g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#ffd54a','stroke-width':5,'stroke-linecap':'round','marker-end':'url(#arrowHead)',opacity:preview?0.7:1}));
+    return g;
+  }
+  function renderArrows(){
+    aLayer.textContent='';
+    arrows.forEach(function(a){ aLayer.appendChild(arrowNode(a,false)); });
+  }
+  function showPreview(a){ pLayer.textContent=''; pLayer.appendChild(arrowNode(a,true)); }
+  function clearPreview(){ pLayer.textContent=''; }
+
+  /* ---------- outs ---------- */
+  function renderOuts(){
+    document.getElementById('outsNum').textContent=outs;
+    var dots=document.querySelectorAll('.outs .dot');
+    dots.forEach(function(d){ d.classList.toggle('on', Number(d.getAttribute('data-i'))<outs); });
+  }
+  document.getElementById('outsBox').addEventListener('click',function(){ outs=(outs+1)%3; renderOuts(); });
+
+  /* ---------- pointer interaction ---------- */
+  var active=null, startClient=null, moved=false;
+
+  svg.addEventListener('pointerdown',function(e){
+    var p=toSvg(e);
+    startClient={x:e.clientX,y:e.clientY}; moved=false;
+    var fEl=e.target.closest('[data-fielder]');
+
+    if(tool==='arrow'){
+      active={type:'arrow',x1:p.x,y1:p.y,x2:p.x,y2:p.y};
+      showPreview(active);
+    } else if(fEl){
+      var f=getFielder(fEl.getAttribute('data-fielder'));
+      active={type:'fielder',f:f,offx:p.x-f.x,offy:p.y-f.y};
+      f.node.setAttribute('filter','');
+    } else {
+      active={type:'tap',p:p,target:e.target};
+    }
+    try{ svg.setPointerCapture(e.pointerId); }catch(_){}
     e.preventDefault();
-  }, { passive:false });
+  });
 
-  // ---------- Init ----------
-  buildPlayers();
-  renderOuts();
-  placeBall(DEFAULT_BALL.x, DEFAULT_BALL.y);
+  svg.addEventListener('pointermove',function(e){
+    if(!active) return;
+    var p=toSvg(e);
+    if(Math.hypot(e.clientX-startClient.x,e.clientY-startClient.y)>6) moved=true;
+    if(active.type==='fielder'){
+      active.f.x=clamp(p.x-active.offx); active.f.y=clamp(p.y-active.offy);
+      setFielderPos(active.f);
+    } else if(active.type==='arrow'){
+      active.x2=p.x; active.y2=p.y; showPreview(active);
+    }
+    e.preventDefault();
+  });
+
+  function finish(e){
+    if(!active) return;
+    if(active.type==='arrow'){
+      clearPreview();
+      if(Math.hypot(active.x2-active.x1,active.y2-active.y1)>20){
+        arrows.push({x1:active.x1,y1:active.y1,x2:active.x2,y2:active.y2});
+        renderArrows();
+      }
+    } else if(active.type==='fielder'){
+      active.f.node.setAttribute('filter','url(#soft)');
+    } else if(active.type==='tap' && !moved){
+      var baseEl=active.target.closest('[data-base]');
+      if(baseEl){ toggleRunner(baseEl.getAttribute('data-base')); }
+      else { setBall(active.p); }
+    }
+    active=null;
+    try{ svg.releasePointerCapture(e.pointerId); }catch(_){}
+  }
+  svg.addEventListener('pointerup',function(e){ finish(e); e.preventDefault(); });
+  svg.addEventListener('pointercancel',function(e){ clearPreview(); if(active&&active.type==='fielder'){active.f.node.setAttribute('filter','url(#soft)');} active=null; });
+
+  // Hard stop: the field area never scrolls (covers older touch handling too)
+  document.querySelector('.stage').addEventListener('touchmove',function(e){ e.preventDefault(); },{passive:false});
+
+  /* ---------- toolbar ---------- */
+  var segBtns=document.querySelectorAll('.seg button');
+  segBtns.forEach(function(btn){
+    btn.addEventListener('click',function(){
+      tool=btn.getAttribute('data-tool');
+      segBtns.forEach(function(b){ b.classList.toggle('active', b===btn); });
+    });
+  });
+  document.getElementById('resetPlayers').addEventListener('click',function(){
+    defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
+  });
+  document.getElementById('clearBall').addEventListener('click',function(){ ball=null; renderBall(); });
+  document.getElementById('clearArrows').addEventListener('click',function(){ arrows=[]; renderArrows(); });
+  document.getElementById('clearAll').addEventListener('click',function(){
+    ball=null; arrows=[]; runners={1:false,2:false,3:false}; outs=0;
+    renderBall(); renderArrows(); renderRunners(); renderOuts();
+  });
+
+  var situationInput=document.getElementById('situationText');
+
+  /* ---------- preset situations ---------- */
+  var PRESETS=[
+    {name:'Fly ball to RF, runner on 2nd',      outs:0, runners:[2],       ball:{x:768,y:322}},
+    {name:'Ground ball to SS, runner on 1st',   outs:0, runners:[1],       ball:{x:415,y:548}},
+    {name:'Fly ball to LF, runners on 1st & 2nd',outs:1, runners:[1,2],    ball:{x:232,y:322}},
+    {name:'Ground ball to 2B, bases loaded',    outs:1, runners:[1,2,3],   ball:{x:588,y:548}},
+    {name:'Line drive to CF, runner on 3rd',    outs:2, runners:[3],       ball:{x:500,y:300}},
+    {name:'Bunt in front of the plate, runner on 1st', outs:0, runners:[1], ball:{x:500,y:800}},
+    {name:'Base hit to RF, runner on 1st (cutoff)', outs:1, runners:[1],   ball:{x:790,y:360}}
+  ];
+  var sel=document.getElementById('presets');
+  PRESETS.forEach(function(pre,idx){
+    var o=document.createElement('option'); o.value=idx; o.textContent=pre.name; sel.appendChild(o);
+  });
+  sel.addEventListener('change',function(){
+    if(sel.value==='') return;
+    var pre=PRESETS[Number(sel.value)];
+    runners={1:false,2:false,3:false};
+    pre.runners.forEach(function(b){ runners[b]=true; });
+    outs=pre.outs;
+    ball={x:pre.ball.x,y:pre.ball.y};
+    arrows=[];
+    situationInput.value=pre.name;
+    renderRunners(); renderOuts(); renderBall(); renderArrows();
+  });
+
+  /* ---------- init ---------- */
+  buildFielders();
+  renderRunners(); renderBall(); renderArrows(); renderOuts();
 })();
 </script>
 </body>
