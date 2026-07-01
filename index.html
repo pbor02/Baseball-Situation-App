@@ -94,7 +94,44 @@
   .hint b{color:#cdd8e1;font-weight:700;}
 
   /* ---------- Field ---------- */
-  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px;touch-action:none;}
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px;touch-action:none;position:relative;}
+
+  /* floating controls in the dark corners around the field */
+  .corner{position:absolute;z-index:6;display:flex;gap:6px;}
+  .corner.tl{top:8px;left:8px;}
+  .corner.tr{top:8px;right:8px;}
+  .corner.bl{bottom:8px;left:8px;}
+  .corner.br{bottom:8px;right:8px;}
+  .cbtn{
+    border:1px solid var(--line);background:rgba(18,27,37,.82);color:var(--ink);
+    font-size:13px;font-weight:700;letter-spacing:.01em;padding:0 14px;height:42px;border-radius:12px;
+    box-shadow:0 3px 10px rgba(0,0,0,.45);cursor:pointer;touch-action:manipulation;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .cbtn:active{transform:translateY(1px);}
+  select.cbtn{appearance:none;width:auto;min-width:92px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:28px;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 18px,calc(100% - 10px) 18px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
+  .cue{
+    position:absolute;top:54px;left:50%;transform:translateX(-50%);
+    max-width:86%;z-index:5;pointer-events:none;
+    background:rgba(10,17,24,.8);color:#eaf1f6;border:1px solid var(--line);border-radius:20px;
+    padding:7px 14px;font-size:13px;font-weight:700;text-align:center;line-height:1.35;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(0,0,0,.4);
+    opacity:0;transition:opacity .25s;
+  }
+  .cue.show{opacity:1;}
+  .corner .seg{background:rgba(18,27,37,.82);box-shadow:0 3px 10px rgba(0,0,0,.45);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+  .corner .seg button{touch-action:manipulation;}
+  .replay{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:44px;height:44px;border-radius:10px;font-size:15px;cursor:pointer;flex:0 0 auto;
+    display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation;
+  }
+  .replay:active{transform:translateY(1px);}
+
   svg#field{width:100%;height:100%;touch-action:none;display:block;
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));}
   svg#field *{touch-action:none;}
@@ -105,8 +142,19 @@
   text{user-select:none;-webkit-user-select:none;}
 
   @media (max-width:560px){
-    #situationText{font-size:15px;}
-    .hint{display:none;}
+    header{padding:6px 8px;gap:6px;}
+    .board{flex:1 1 100%;gap:8px;padding:6px 8px;}
+    .board .situation label{display:none;}
+    .mini{display:none;}
+    #situationText{font-size:14px;}
+    .replay{width:40px;height:40px;}
+    .outs{flex-direction:row;gap:6px;padding:6px 10px;min-width:0;}
+    .outs .dots{margin-top:0;}
+    .seg button{padding:7px 11px;min-height:40px;}
+    .cbtn{height:40px;padding:0 12px;font-size:12px;}
+    .corner.tl,.corner.tr{top:6px;} .corner.tl{left:6px;} .corner.tr{right:6px;}
+    .corner.bl,.corner.br{bottom:6px;} .corner.bl{left:6px;} .corner.br{right:6px;}
+    .stage{padding:3px;}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -130,34 +178,18 @@
       </svg>
     </div>
 
+    <button id="replayBtn" class="replay" title="Replay movement" aria-label="Replay">&#9654;</button>
+
     <div class="outs" id="outsBox" role="button" tabindex="0" title="Tap to change outs">
       <div class="k">OUTS</div>
       <div class="num" id="outsNum">0</div>
       <div class="dots"><span class="dot" data-i="0"></span><span class="dot" data-i="1"></span></div>
     </div>
   </div>
-
-  <div class="toolbar">
-    <div class="seg" role="group" aria-label="Tool">
-      <button data-tool="move" class="active">Move players</button>
-      <button data-tool="arrow">Draw arrow</button>
-    </div>
-    <select class="btn" id="presets" aria-label="Load a situation">
-      <option value="">Load a situation…</option>
-    </select>
-    <button class="btn" id="resetPlayers">Reset players</button>
-    <button class="btn ghost" id="clearBall">Clear ball</button>
-    <button class="btn ghost" id="clearArrows">Clear arrows</button>
-    <button class="btn ghost" id="clearAll">Clear all</button>
-    <div class="hint">
-      <b>Drag</b> a player to move him &nbsp;•&nbsp; <b>Tap a base</b> to put a runner on &nbsp;•&nbsp;
-      <b>Tap the grass</b> to drop the ball &nbsp;•&nbsp; Switch to <b>Draw arrow</b> to show where he goes.
-    </div>
-  </div>
 </header>
 
 <div class="stage">
-  <svg id="field" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-label="Baseball field">
+  <svg id="field" viewBox="150 165 700 800" preserveAspectRatio="xMidYMid meet" aria-label="Baseball field">
     <defs>
       <clipPath id="fairClip">
         <path d="M 500 880 L 5 385 A 700 700 0 0 1 995 385 Z"/>
@@ -168,6 +200,19 @@
       <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
         <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
       </filter>
+      <filter id="tokenShadow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#06140c" flood-opacity="0.5"/>
+      </filter>
+      <linearGradient id="tokenSheen" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+        <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.06"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="vignette" cx="50%" cy="60%" r="72%">
+        <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+        <stop offset="0.72" stop-color="#000000" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000000" stop-opacity="0.30"/>
+      </radialGradient>
     </defs>
 
     <!-- beyond the fence -->
@@ -183,25 +228,32 @@
     <path d="M 5 385 A 700 700 0 0 1 995 385" fill="none" stroke="#12331f" stroke-width="10" stroke-linecap="round"/>
     <path d="M 5 385 A 700 700 0 0 1 995 385" fill="none" stroke="#eecb59" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
 
-    <!-- infield skin (dirt diamond) -->
-    <path d="M 500 912 L 742 670 L 500 428 L 258 670 Z"
-          fill="#c0824a" stroke="#a56a37" stroke-width="4" stroke-linejoin="round"/>
-    <!-- home dirt circle -->
-    <circle cx="500" cy="880" r="52" fill="#c0824a"/>
-    <!-- pitcher mound -->
-    <circle cx="500" cy="662" r="34" fill="#cf9558"/>
-    <rect x="487" y="658" width="26" height="8" rx="2" fill="#f2f4f6"/>
+    <!-- depth vignette (over grass only) -->
+    <rect x="0" y="0" width="1000" height="1000" fill="url(#vignette)" pointer-events="none"/>
+
+    <!-- infield dirt skin (rounded: semicircular grass line) -->
+    <path d="M 500 916 L 746 670 A 246 246 0 0 0 254 670 Z"
+          fill="#c58a54" stroke="#a56a37" stroke-width="5" stroke-linejoin="round"/>
+    <!-- infield grass (diamond between the base paths) -->
+    <path d="M 500 510 L 660 670 L 500 830 L 340 670 Z" fill="#348a3d" stroke="#2c7a35" stroke-width="2"/>
+    <!-- home dirt circle + batter's boxes -->
+    <circle cx="500" cy="880" r="58" fill="#c58a54"/>
+    <rect x="446" y="852" width="18" height="50" rx="2" fill="none" stroke="#ffffff" stroke-width="2.5" opacity=".8"/>
+    <rect x="536" y="852" width="18" height="50" rx="2" fill="none" stroke="#ffffff" stroke-width="2.5" opacity=".8"/>
+    <!-- pitcher's mound -->
+    <circle cx="500" cy="662" r="36" fill="#d29a5f" stroke="#b47c46" stroke-width="2"/>
+    <rect x="486" y="658" width="28" height="8" rx="2" fill="#f2f4f6"/>
 
     <!-- foul lines -->
-    <line x1="500" y1="880" x2="995" y2="385" stroke="#ffffff" stroke-width="4"/>
-    <line x1="500" y1="880" x2="5"   y2="385" stroke="#ffffff" stroke-width="4"/>
+    <line x1="500" y1="880" x2="995" y2="385" stroke="#ffffff" stroke-width="5"/>
+    <line x1="500" y1="880" x2="5"   y2="385" stroke="#ffffff" stroke-width="5"/>
 
     <!-- bases -->
-    <rect x="698" y="658" width="24" height="24" rx="2" transform="rotate(45 710 670)" fill="#fff" stroke="#d7dde2"/>
-    <rect x="488" y="448" width="24" height="24" rx="2" transform="rotate(45 500 460)" fill="#fff" stroke="#d7dde2"/>
-    <rect x="278" y="658" width="24" height="24" rx="2" transform="rotate(45 290 670)" fill="#fff" stroke="#d7dde2"/>
+    <rect x="697" y="657" width="26" height="26" rx="2.5" transform="rotate(45 710 670)" fill="#fff" stroke="#d7dde2"/>
+    <rect x="487" y="447" width="26" height="26" rx="2.5" transform="rotate(45 500 460)" fill="#fff" stroke="#d7dde2"/>
+    <rect x="277" y="657" width="26" height="26" rx="2.5" transform="rotate(45 290 670)" fill="#fff" stroke="#d7dde2"/>
     <!-- home plate -->
-    <path d="M 486 866 L 514 866 L 514 884 L 500 896 L 486 884 Z" fill="#fff" stroke="#d7dde2"/>
+    <path d="M 485 865 L 515 865 L 515 884 L 500 897 L 485 884 Z" fill="#fff" stroke="#d7dde2"/>
 
     <!-- interactive base tap zones (above field, below players) -->
     <g id="baseZones">
@@ -217,6 +269,25 @@
     <g id="ballLayer"></g>
     <g id="fieldersLayer"></g>
   </svg>
+
+  <div class="corner tl">
+    <div class="seg" role="group" aria-label="Tool">
+      <button data-tool="move" class="active">Move</button>
+      <button data-tool="arrow">Arrow</button>
+    </div>
+  </div>
+  <div class="corner tr">
+    <select class="cbtn" id="presets" aria-label="Load a situation">
+      <option value="">Load…</option>
+    </select>
+  </div>
+  <div class="corner bl">
+    <button class="cbtn" id="resetPlayers">Reset</button>
+  </div>
+  <div class="corner br">
+    <button class="cbtn" id="clearMarks">Clear</button>
+  </div>
+  <div class="cue" id="cueBar" aria-live="polite"></div>
 </div>
 
 <script>
@@ -232,7 +303,7 @@
 
   /* ---------- mow rings ---------- */
   var rings=document.getElementById('grassRings');
-  var A="#2f7d3c", B="#37913f", i=0;
+  var A="#3c8f42", B="#2f7c37", i=0;
   for(var r=660;r>=60;r-=66){
     var c=document.createElementNS(NS,'circle');
     c.setAttribute('cx',500);c.setAttribute('cy',880);c.setAttribute('r',r);
@@ -243,10 +314,12 @@
   /* ---------- state ---------- */
   var fielders=[
     {id:'LF',x:300,y:335},{id:'CF',x:500,y:262},{id:'RF',x:700,y:335},
-    {id:'SS',x:400,y:560},{id:'2B',x:600,y:560},
-    {id:'3B',x:302,y:634},{id:'1B',x:698,y:634},
+    {id:'SS',x:388,y:482},{id:'2B',x:612,y:482},
+    {id:'3B',x:330,y:616},{id:'1B',x:670,y:616},
     {id:'P',x:500,y:662},{id:'C',x:500,y:928}
   ];
+  // position-group colors: battery=red, infield=blue, outfield=teal
+  var COLORS={P:'#c0392b',C:'#c0392b','1B':'#1d4e89','2B':'#1d4e89','3B':'#1d4e89',SS:'#1d4e89',LF:'#0e7c6b',CF:'#0e7c6b',RF:'#0e7c6b'};
   var defaults=fielders.map(function(f){return {id:f.id,x:f.x,y:f.y};});
   var runners={1:false,2:false,3:false};
   var outs=0;
@@ -260,7 +333,8 @@
     for(var k in attrs){ n.setAttribute(k,attrs[k]); }
     return n;
   }
-  function clamp(v){ return Math.max(28,Math.min(972,v)); }
+  function clampX(v){ return Math.max(185,Math.min(815,v)); }
+  function clampY(v){ return Math.max(200,Math.min(930,v)); }
   function toSvg(evt){
     var pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
     var p=pt.matrixTransform(svg.getScreenCTM().inverse());
@@ -272,10 +346,12 @@
   function buildFielders(){
     fLayer.textContent='';
     fielders.forEach(function(f){
-      var g=el('g',{'class':'fielder','data-fielder':f.id,'transform':'translate('+f.x+','+f.y+')','filter':'url(#soft)'});
-      g.appendChild(el('circle',{r:36,fill:'transparent'})); // bigger grab target
-      g.appendChild(el('circle',{r:27,fill:'#16243d',stroke:'#fff','stroke-width':2.5}));
-      var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#fff','font-size':'19','font-weight':'800','font-family':'system-ui,sans-serif','letter-spacing':'0.5'});
+      var color=COLORS[f.id]||'#1d4e89';
+      var g=el('g',{'class':'fielder','data-fielder':f.id,'transform':'translate('+f.x+','+f.y+')','filter':'url(#tokenShadow)'});
+      g.appendChild(el('circle',{r:44,fill:'transparent'}));                          // large grab target
+      g.appendChild(el('circle',{r:33,fill:color,stroke:'#ffffff','stroke-width':3.5})); // body
+      g.appendChild(el('circle',{r:33,fill:'url(#tokenSheen)'}));                       // top highlight
+      var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#ffffff','font-size':'22','font-weight':'800','font-family':'system-ui,sans-serif','letter-spacing':'0.5'});
       t.textContent=f.id; g.appendChild(t);
       f.node=g; fLayer.appendChild(g);
     });
@@ -292,16 +368,16 @@
       var base=BASE_XY[b];
       var dx=HOME.x-base.x, dy=HOME.y-base.y, len=Math.hypot(dx,dy);
       var ox=base.x+dx/len*20, oy=base.y+dy/len*20;
-      var g=el('g',{'transform':'translate('+ox+','+oy+')','filter':'url(#soft)'});
-      g.appendChild(el('circle',{r:19,fill:'#ef6a2b',stroke:'#fff','stroke-width':2.5}));
-      var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#fff','font-size':'15','font-weight':'800','font-family':'system-ui'});
+      var g=el('g',{'transform':'translate('+ox+','+oy+')','filter':'url(#tokenShadow)'});
+      g.appendChild(el('circle',{r:22,fill:'#ff7a1a',stroke:'#fff','stroke-width':3}));
+      var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#fff','font-size':'17','font-weight':'800','font-family':'system-ui'});
       t.textContent='R'; g.appendChild(t);
       rLayer.appendChild(g);
     }
     // mini scoreboard bases
-    document.getElementById('mb-1').setAttribute('fill',runners[1]?'#ef6a2b':'#33465a');
-    document.getElementById('mb-2').setAttribute('fill',runners[2]?'#ef6a2b':'#33465a');
-    document.getElementById('mb-3').setAttribute('fill',runners[3]?'#ef6a2b':'#33465a');
+    document.getElementById('mb-1').setAttribute('fill',runners[1]?'#ff7a1a':'#33465a');
+    document.getElementById('mb-2').setAttribute('fill',runners[2]?'#ff7a1a':'#33465a');
+    document.getElementById('mb-3').setAttribute('fill',runners[3]?'#ff7a1a':'#33465a');
   }
   function toggleRunner(b){ runners[b]=!runners[b]; renderRunners(); }
 
@@ -310,13 +386,13 @@
   function renderBall(){
     bLayer.textContent='';
     if(!ball) return;
-    var g=el('g',{'transform':'translate('+ball.x+','+ball.y+')','filter':'url(#soft)'});
-    g.appendChild(el('circle',{r:13,fill:'#fff',stroke:'#c9ccd1','stroke-width':1}));
-    g.appendChild(el('path',{d:'M -7 -6 A 11 11 0 0 1 -7 6',fill:'none',stroke:'#d7263d','stroke-width':1.6}));
-    g.appendChild(el('path',{d:'M 7 -6 A 11 11 0 0 0 7 6',fill:'none',stroke:'#d7263d','stroke-width':1.6}));
+    var g=el('g',{'transform':'translate('+ball.x+','+ball.y+')','filter':'url(#tokenShadow)'});
+    g.appendChild(el('circle',{r:15,fill:'#fff',stroke:'#c9ccd1','stroke-width':1.5}));
+    g.appendChild(el('path',{d:'M -8 -7 A 12 12 0 0 1 -8 7',fill:'none',stroke:'#d7263d','stroke-width':1.8}));
+    g.appendChild(el('path',{d:'M 8 -7 A 12 12 0 0 0 8 7',fill:'none',stroke:'#d7263d','stroke-width':1.8}));
     bLayer.appendChild(g);
   }
-  function setBall(p){ ball={x:clamp(p.x),y:clamp(p.y)}; renderBall(); }
+  function setBall(p){ ball={x:clampX(p.x),y:clampY(p.y)}; renderBall(); }
 
   /* ---------- arrows ---------- */
   var aLayer=document.getElementById('arrowsLayer');
@@ -354,6 +430,7 @@
       active={type:'arrow',x1:p.x,y1:p.y,x2:p.x,y2:p.y};
       showPreview(active);
     } else if(fEl){
+      stopAnim();
       var f=getFielder(fEl.getAttribute('data-fielder'));
       active={type:'fielder',f:f,offx:p.x-f.x,offy:p.y-f.y};
       f.node.setAttribute('filter','');
@@ -369,7 +446,7 @@
     var p=toSvg(e);
     if(Math.hypot(e.clientX-startClient.x,e.clientY-startClient.y)>6) moved=true;
     if(active.type==='fielder'){
-      active.f.x=clamp(p.x-active.offx); active.f.y=clamp(p.y-active.offy);
+      active.f.x=clampX(p.x-active.offx); active.f.y=clampY(p.y-active.offy);
       setFielderPos(active.f);
     } else if(active.type==='arrow'){
       active.x2=p.x; active.y2=p.y; showPreview(active);
@@ -386,7 +463,7 @@
         renderArrows();
       }
     } else if(active.type==='fielder'){
-      active.f.node.setAttribute('filter','url(#soft)');
+      active.f.node.setAttribute('filter','url(#tokenShadow)');
     } else if(active.type==='tap' && !moved){
       var baseEl=active.target.closest('[data-base]');
       if(baseEl){ toggleRunner(baseEl.getAttribute('data-base')); }
@@ -396,12 +473,12 @@
     try{ svg.releasePointerCapture(e.pointerId); }catch(_){}
   }
   svg.addEventListener('pointerup',function(e){ finish(e); e.preventDefault(); });
-  svg.addEventListener('pointercancel',function(e){ clearPreview(); if(active&&active.type==='fielder'){active.f.node.setAttribute('filter','url(#soft)');} active=null; });
+  svg.addEventListener('pointercancel',function(e){ clearPreview(); if(active&&active.type==='fielder'){active.f.node.setAttribute('filter','url(#tokenShadow)');} active=null; });
 
   // Hard stop: the field area never scrolls (covers older touch handling too)
   document.querySelector('.stage').addEventListener('touchmove',function(e){ e.preventDefault(); },{passive:false});
 
-  /* ---------- toolbar ---------- */
+  /* ---------- tool toggle (Move / Arrow) ---------- */
   var segBtns=document.querySelectorAll('.seg button');
   segBtns.forEach(function(btn){
     btn.addEventListener('click',function(){
@@ -409,42 +486,197 @@
       segBtns.forEach(function(b){ b.classList.toggle('active', b===btn); });
     });
   });
-  document.getElementById('resetPlayers').addEventListener('click',function(){
-    defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
-  });
-  document.getElementById('clearBall').addEventListener('click',function(){ ball=null; renderBall(); });
-  document.getElementById('clearArrows').addEventListener('click',function(){ arrows=[]; renderArrows(); });
-  document.getElementById('clearAll').addEventListener('click',function(){
-    ball=null; arrows=[]; runners={1:false,2:false,3:false}; outs=0;
-    renderBall(); renderArrows(); renderRunners(); renderOuts();
-  });
 
   var situationInput=document.getElementById('situationText');
+  var cueEl=document.getElementById('cueBar');
 
-  /* ---------- preset situations ---------- */
+  /* ---------- coaching cue text per situation ---------- */
+  var CUES={
+    'Ground ball to SS':'SS fields → throw to 1B (1B covers)',
+    'Ground ball to 2B':'2B fields → throw to 1B (1B covers)',
+    'Ground ball to 3B':'3B fields → throw across to 1B',
+    'Ground ball to 1B':'1B fields → P covers first',
+    'Comebacker to the pitcher':'P fields → throw to 1B',
+    'Slow roller to 3B':'3B charges → barehand → throw to 1B',
+    'Pop fly to shortstop':'SS calls it → everyone clears',
+    'Fly ball to left field':'LF catches → CF backs up',
+    'Fly ball to center field':'CF catches → LF & RF back up',
+    'Fly ball to right field':'RF catches → CF backs up',
+    'Pop-up between 1B and 2B':'2B calls it → RF backs up',
+    'Foul pop near first base':'1B catches → 2B covers first',
+    'Base hit to left field':'LF fields → SS is cutoff → 2B covers 2nd',
+    'Base hit to center field':'CF fields → SS is cutoff → 2B covers 2nd',
+    'Base hit to right field':'RF fields → 2B is cutoff → SS covers 2nd',
+    'Runner on 1st — hit to RF (throw to 3rd)':'RF fields → throw to 3B → SS is cutoff',
+    'Runner on 1st — grounder to SS (turn two)':'SS → 2B covers & turns → throw to 1B',
+    'Runner on 1st — grounder to 2B (turn two)':'2B → SS covers & turns → throw to 1B',
+    'Runner on 1st — grounder to 3B':'3B → SS covers 2nd (force) → then 1B',
+    'Runner on 2nd — grounder to SS':'SS looks runner back → throw to 1B',
+    'Runner on 3rd, infield in — grounder to SS':'SS fields → throw home (C covers)',
+    '1st & 2nd — grounder to 3B (force at third)':'3B steps on third (force) → then 1B',
+    'Bases loaded — grounder to SS (force at home)':'SS → throw home (force) → C covers',
+    'Runner on 3rd — medium fly to CF (tag up)':'CF catches → throw home → 1B cutoff → C covers',
+    'Runner on 2nd — fly to RF (tag to 3rd)':'RF catches → throw to 3B → SS cutoff',
+    'Runner on 1st — deep fly to RF':'RF catches → hit the relay → 2B covers 2nd',
+    'Runner on 1st — sacrifice bunt':'P/3B field bunt → out at 1B (SS covers 2nd)',
+    'Runner on 2nd — sacrifice bunt':'P fields → out at 1B → watch runner to 3rd',
+    'Squeeze — runner on 3rd bunts':'P fields → throw home → C covers plate',
+    'Runner steals second — throw down':'C throws down → SS covers 2nd → CF backs up'
+  };
+
+  /* ---------- reusable target spots (coverage / backups) ---------- */
+  var AT={
+    first:{x:702,y:650}, second:{x:500,y:498}, third:{x:314,y:650}, home:{x:500,y:852},
+    backFirst:{x:772,y:706}, backThird:{x:232,y:706}, backSecond:{x:500,y:410}, backHome:{x:500,y:922}
+  };
+  function defaultOf(id){ for(var j=0;j<defaults.length;j++){ if(defaults[j].id===id) return defaults[j]; } return null; }
+
+  /* ---------- preset situations (ball + where each player moves) ---------- */
   var PRESETS=[
-    {name:'Fly ball to RF, runner on 2nd',      outs:0, runners:[2],       ball:{x:768,y:322}},
-    {name:'Ground ball to SS, runner on 1st',   outs:0, runners:[1],       ball:{x:415,y:548}},
-    {name:'Fly ball to LF, runners on 1st & 2nd',outs:1, runners:[1,2],    ball:{x:232,y:322}},
-    {name:'Ground ball to 2B, bases loaded',    outs:1, runners:[1,2,3],   ball:{x:588,y:548}},
-    {name:'Line drive to CF, runner on 3rd',    outs:2, runners:[3],       ball:{x:500,y:300}},
-    {name:'Bunt in front of the plate, runner on 1st', outs:0, runners:[1], ball:{x:500,y:800}},
-    {name:'Base hit to RF, runner on 1st (cutoff)', outs:1, runners:[1],   ball:{x:790,y:360}}
+    // --- Ground balls (bases empty) ---
+    {g:'Ground balls', name:'Ground ball to SS', runners:[], outs:0, ball:{x:420,y:515},
+      moves:{SS:{x:420,y:515}, '1B':AT.first, RF:AT.backFirst}},
+    {g:'Ground balls', name:'Ground ball to 2B', runners:[], outs:0, ball:{x:596,y:515},
+      moves:{'2B':{x:596,y:515}, '1B':AT.first, RF:AT.backFirst}},
+    {g:'Ground balls', name:'Ground ball to 3B', runners:[], outs:0, ball:{x:350,y:600},
+      moves:{'3B':{x:350,y:600}, '1B':AT.first, RF:AT.backFirst}},
+    {g:'Ground balls', name:'Ground ball to 1B', runners:[], outs:0, ball:{x:655,y:625},
+      moves:{'1B':{x:655,y:625}, P:AT.first, RF:AT.backFirst}},
+    {g:'Ground balls', name:'Comebacker to the pitcher', runners:[], outs:0, ball:{x:500,y:636},
+      moves:{P:{x:500,y:636}, '1B':AT.first, RF:AT.backFirst}},
+    {g:'Ground balls', name:'Slow roller to 3B', runners:[], outs:0, ball:{x:380,y:720},
+      moves:{'3B':{x:380,y:720}, '1B':AT.first, RF:AT.backFirst}},
+
+    // --- Fly balls & pop-ups ---
+    {g:'Fly balls & pop-ups', name:'Pop fly to shortstop', runners:[], outs:0, ball:{x:400,y:500},
+      moves:{SS:{x:400,y:500}, CF:{x:460,y:432}}},
+    {g:'Fly balls & pop-ups', name:'Fly ball to left field', runners:[], outs:0, ball:{x:255,y:320},
+      moves:{LF:{x:255,y:320}, CF:{x:410,y:300}}},
+    {g:'Fly balls & pop-ups', name:'Fly ball to center field', runners:[], outs:0, ball:{x:500,y:285},
+      moves:{CF:{x:500,y:285}, LF:{x:405,y:320}, RF:{x:595,y:320}}},
+    {g:'Fly balls & pop-ups', name:'Fly ball to right field', runners:[], outs:0, ball:{x:750,y:330},
+      moves:{RF:{x:750,y:330}, CF:{x:600,y:300}}},
+    {g:'Fly balls & pop-ups', name:'Pop-up between 1B and 2B', runners:[], outs:0, ball:{x:605,y:545},
+      moves:{'2B':{x:605,y:545}, RF:{x:700,y:460}}},
+    {g:'Fly balls & pop-ups', name:'Foul pop near first base', runners:[], outs:0, ball:{x:772,y:640},
+      moves:{'1B':{x:772,y:640}, '2B':AT.first}},
+
+    // --- Base hits (cutoffs) ---
+    {g:'Base hits (cutoffs)', name:'Base hit to left field', runners:[], outs:0, ball:{x:245,y:360},
+      moves:{LF:{x:245,y:360}, SS:{x:410,y:470}, '2B':AT.second}},
+    {g:'Base hits (cutoffs)', name:'Base hit to center field', runners:[], outs:0, ball:{x:510,y:325},
+      moves:{CF:{x:510,y:325}, SS:{x:455,y:500}, '2B':AT.second}},
+    {g:'Base hits (cutoffs)', name:'Base hit to right field', runners:[], outs:0, ball:{x:760,y:370},
+      moves:{RF:{x:760,y:370}, '2B':{x:560,y:470}, SS:AT.second}},
+    {g:'Base hits (cutoffs)', name:'Runner on 1st — hit to RF (throw to 3rd)', runners:[1], outs:0, ball:{x:760,y:370},
+      moves:{RF:{x:760,y:370}, '3B':AT.third, SS:{x:470,y:540}}},
+
+    // --- With runners ---
+    {g:'With runners', name:'Runner on 1st — grounder to SS (turn two)', runners:[1], outs:0, ball:{x:420,y:515},
+      moves:{SS:{x:420,y:515}, '2B':AT.second, '1B':AT.first}},
+    {g:'With runners', name:'Runner on 1st — grounder to 2B (turn two)', runners:[1], outs:0, ball:{x:596,y:515},
+      moves:{'2B':{x:596,y:515}, SS:AT.second, '1B':AT.first}},
+    {g:'With runners', name:'Runner on 1st — grounder to 3B', runners:[1], outs:0, ball:{x:350,y:600},
+      moves:{'3B':{x:350,y:600}, SS:AT.second, '1B':AT.first}},
+    {g:'With runners', name:'Runner on 2nd — grounder to SS', runners:[2], outs:0, ball:{x:420,y:515},
+      moves:{SS:{x:420,y:515}, '1B':AT.first, '3B':AT.third}},
+    {g:'With runners', name:'Runner on 3rd, infield in — grounder to SS', runners:[3], outs:1, ball:{x:425,y:530},
+      moves:{SS:{x:425,y:530}, C:AT.home}},
+    {g:'With runners', name:'1st & 2nd — grounder to 3B (force at third)', runners:[1,2], outs:0, ball:{x:345,y:600},
+      moves:{'3B':AT.third, '1B':AT.first, SS:AT.second}},
+    {g:'With runners', name:'Bases loaded — grounder to SS (force at home)', runners:[1,2,3], outs:1, ball:{x:420,y:515},
+      moves:{SS:{x:420,y:515}, C:AT.home, '2B':AT.second}},
+    {g:'With runners', name:'Runner on 3rd — medium fly to CF (tag up)', runners:[3], outs:1, ball:{x:500,y:320},
+      moves:{CF:{x:500,y:320}, '1B':{x:560,y:704}, C:AT.home}},
+    {g:'With runners', name:'Runner on 2nd — fly to RF (tag to 3rd)', runners:[2], outs:1, ball:{x:755,y:340},
+      moves:{RF:{x:755,y:340}, '3B':AT.third, SS:{x:450,y:560}}},
+    {g:'With runners', name:'Runner on 1st — deep fly to RF', runners:[1], outs:1, ball:{x:768,y:300},
+      moves:{RF:{x:768,y:300}, '2B':AT.second, SS:{x:520,y:490}}},
+
+    // --- Bunts ---
+    {g:'Bunts', name:'Runner on 1st — sacrifice bunt', runners:[1], outs:0, ball:{x:445,y:790},
+      moves:{P:{x:445,y:790}, '3B':{x:365,y:700}, '1B':AT.first, SS:AT.second}},
+    {g:'Bunts', name:'Runner on 2nd — sacrifice bunt', runners:[2], outs:0, ball:{x:430,y:780},
+      moves:{P:{x:430,y:780}, '1B':AT.first, '3B':AT.third}},
+    {g:'Bunts', name:'Squeeze — runner on 3rd bunts', runners:[3], outs:1, ball:{x:475,y:800},
+      moves:{P:{x:475,y:800}, C:AT.home, '1B':AT.first}},
+
+    // --- Steals & extras ---
+    {g:'Steals & extras', name:'Runner steals second — throw down', runners:[1], outs:1, ball:null,
+      moves:{SS:AT.second, CF:AT.backSecond}}
   ];
+
   var sel=document.getElementById('presets');
+  var groups={};
   PRESETS.forEach(function(pre,idx){
-    var o=document.createElement('option'); o.value=idx; o.textContent=pre.name; sel.appendChild(o);
+    var gname=pre.g||'Situations';
+    if(!groups[gname]){ var og=document.createElement('optgroup'); og.label=gname; sel.appendChild(og); groups[gname]=og; }
+    var o=document.createElement('option'); o.value=idx; o.textContent=pre.name; groups[gname].appendChild(o);
   });
+
+  /* ---------- animation ---------- */
+  var currentSituation=null, animRAF=null;
+  function stopAnim(){ if(animRAF){ cancelAnimationFrame(animRAF); animRAF=null; } }
+  function animateMovers(movers){
+    stopAnim();
+    var dur=900, start=null;
+    function ease(t){ return t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+    function step(ts){
+      if(start===null) start=ts;
+      var t=Math.min(1,(ts-start)/dur), e=ease(t);
+      movers.forEach(function(m){ m.f.x=m.x0+(m.x1-m.x0)*e; m.f.y=m.y0+(m.y1-m.y0)*e; setFielderPos(m.f); });
+      if(t<1){ animRAF=requestAnimationFrame(step); } else { animRAF=null; }
+    }
+    animRAF=requestAnimationFrame(step);
+  }
+  function loadSituation(pre, animate){
+    stopAnim();
+    // start from standard alignment
+    defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
+    // scenario
+    runners={1:false,2:false,3:false};
+    (pre.runners||[]).forEach(function(b){ runners[b]=true; });
+    outs=pre.outs||0;
+    ball = pre.ball ? {x:pre.ball.x,y:pre.ball.y} : null;
+    situationInput.value=pre.name;
+    arrows=[];
+    // movement arrows + movers
+    var movers=[], moves=pre.moves||{};
+    Object.keys(moves).forEach(function(id){
+      var f=getFielder(id); if(!f) return;
+      var d=defaultOf(id), t=moves[id];
+      if(Math.hypot(t.x-d.x,t.y-d.y)>6){ arrows.push({x1:d.x,y1:d.y,x2:t.x,y2:t.y}); }
+      movers.push({f:f,x0:d.x,y0:d.y,x1:t.x,y1:t.y});
+    });
+    renderRunners(); renderOuts(); renderBall(); renderArrows();
+    cueEl.textContent = CUES[pre.name] || pre.name || '';
+    cueEl.classList.toggle('show', !!cueEl.textContent);
+    if(animate){ animateMovers(movers); }
+    else { movers.forEach(function(m){ m.f.x=m.x1; m.f.y=m.y1; setFielderPos(m.f); }); }
+    currentSituation=pre;
+  }
+
   sel.addEventListener('change',function(){
     if(sel.value==='') return;
-    var pre=PRESETS[Number(sel.value)];
-    runners={1:false,2:false,3:false};
-    pre.runners.forEach(function(b){ runners[b]=true; });
-    outs=pre.outs;
-    ball={x:pre.ball.x,y:pre.ball.y};
-    arrows=[];
-    situationInput.value=pre.name;
+    loadSituation(PRESETS[Number(sel.value)], true);
+    sel.selectedIndex=0;            // keep the control compact ("Load…")
+    try{ sel.blur(); }catch(_){}
+  });
+  document.getElementById('replayBtn').addEventListener('click',function(){
+    if(currentSituation) loadSituation(currentSituation, true);
+  });
+
+  /* ---------- reset / clear ---------- */
+  document.getElementById('resetPlayers').addEventListener('click',function(){
+    stopAnim();
+    defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
+    runners={1:false,2:false,3:false}; outs=0; ball=null; arrows=[];
+    situationInput.value=''; sel.selectedIndex=0; currentSituation=null;
+    cueEl.textContent=''; cueEl.classList.remove('show');
     renderRunners(); renderOuts(); renderBall(); renderArrows();
+  });
+  document.getElementById('clearMarks').addEventListener('click',function(){
+    arrows=[]; renderArrows();
   });
 
   /* ---------- init ---------- */
