@@ -160,7 +160,7 @@
   </div>
 
   <div id="field-wrap">
-    <svg id="field" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+    <svg id="field" viewBox="0 0 720 960" preserveAspectRatio="xMidYMid meet">
       <defs>
         <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5"
           markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -173,61 +173,61 @@
       </defs>
 
       <!-- Grass background (also the tap target for placing the ball / drawing arrows) -->
-      <rect id="grass-bg" x="0" y="0" width="800" height="600" fill="var(--grass)"></rect>
+      <rect id="grass-bg" x="0" y="0" width="720" height="960" fill="var(--grass)"></rect>
       <!-- mowed stripes for texture (decorative, non-interactive) -->
       <g pointer-events="none" opacity="0.10">
-        <rect x="0" y="0" width="80" height="600" fill="#000"></rect>
-        <rect x="160" y="0" width="80" height="600" fill="#000"></rect>
-        <rect x="320" y="0" width="80" height="600" fill="#000"></rect>
-        <rect x="480" y="0" width="80" height="600" fill="#000"></rect>
-        <rect x="640" y="0" width="80" height="600" fill="#000"></rect>
+        <rect x="0" y="0" width="72" height="960" fill="#000"></rect>
+        <rect x="144" y="0" width="72" height="960" fill="#000"></rect>
+        <rect x="288" y="0" width="72" height="960" fill="#000"></rect>
+        <rect x="432" y="0" width="72" height="960" fill="#000"></rect>
+        <rect x="576" y="0" width="72" height="960" fill="#000"></rect>
       </g>
 
       <!-- Outfield fence arc (decorative) -->
-      <path d="M 60,600 A 460,460 0 0 1 740,600" fill="none" stroke="#e9e9e9" stroke-width="4" stroke-dasharray="2 10" opacity="0.6" pointer-events="none"></path>
+      <path d="M 54,960 A 575,575 0 0 1 666,960" fill="none" stroke="#e9e9e9" stroke-width="4" stroke-dasharray="2 10" opacity="0.6" pointer-events="none"></path>
 
       <!-- Foul lines -->
       <g pointer-events="none">
-        <line x1="400" y1="560" x2="748" y2="212" stroke="var(--line)" stroke-width="4"></line>
-        <line x1="400" y1="560" x2="52" y2="212" stroke="var(--line)" stroke-width="4"></line>
+        <line x1="360" y1="896" x2="673" y2="339" stroke="var(--line)" stroke-width="4"></line>
+        <line x1="360" y1="896" x2="47" y2="339" stroke="var(--line)" stroke-width="4"></line>
       </g>
 
       <!-- Infield dirt -->
-      <polygon points="400,598 562,398 400,235 238,398" fill="var(--dirt)" stroke="#a97a45" stroke-width="2" pointer-events="none"></polygon>
+      <polygon points="360,957 506,637 360,376 214,637" fill="var(--dirt)" stroke="#a97a45" stroke-width="2" pointer-events="none"></polygon>
 
       <!-- Base paths (dirt strips) -->
       <g stroke="var(--dirt)" stroke-width="14" opacity="0.9" pointer-events="none">
-        <line x1="400" y1="560" x2="516" y2="444"></line>
-        <line x1="516" y1="444" x2="400" y2="328"></line>
-        <line x1="400" y1="328" x2="284" y2="444"></line>
-        <line x1="284" y1="444" x2="400" y2="560"></line>
+        <line x1="360" y1="896" x2="464" y2="710"></line>
+        <line x1="464" y1="710" x2="360" y2="525"></line>
+        <line x1="360" y1="525" x2="256" y2="710"></line>
+        <line x1="256" y1="710" x2="360" y2="896"></line>
       </g>
 
       <!-- Pitcher's mound -->
       <g pointer-events="none">
-        <circle cx="400" cy="450" r="26" fill="var(--dirt)" stroke="#a97a45" stroke-width="2"></circle>
-        <rect x="392" y="446" width="16" height="6" fill="#f5f5f5"></rect>
+        <circle cx="360" cy="720" r="33" fill="var(--dirt)" stroke="#a97a45" stroke-width="2"></circle>
+        <rect x="353" y="714" width="14" height="10" fill="#f5f5f5"></rect>
       </g>
 
       <!-- Bases (tap targets) -->
       <g id="bases-layer">
         <g class="base-hit" data-base="first">
-          <rect x="-13" y="-13" width="26" height="26" transform="translate(516,444) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
-          <circle cx="516" cy="444" r="22" fill="transparent"></circle>
+          <rect x="-16" y="-16" width="32" height="32" transform="translate(464,710) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
+          <circle cx="464" cy="710" r="28" fill="transparent"></circle>
         </g>
         <g class="base-hit" data-base="second">
-          <rect x="-13" y="-13" width="26" height="26" transform="translate(400,328) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
-          <circle cx="400" cy="328" r="22" fill="transparent"></circle>
+          <rect x="-16" y="-16" width="32" height="32" transform="translate(360,525) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
+          <circle cx="360" cy="525" r="28" fill="transparent"></circle>
         </g>
         <g class="base-hit" data-base="third">
-          <rect x="-13" y="-13" width="26" height="26" transform="translate(284,444) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
-          <circle cx="284" cy="444" r="22" fill="transparent"></circle>
+          <rect x="-16" y="-16" width="32" height="32" transform="translate(256,710) rotate(45)" fill="var(--line)" stroke="#333" stroke-width="1.5"></rect>
+          <circle cx="256" cy="710" r="28" fill="transparent"></circle>
         </g>
       </g>
 
       <!-- Home plate -->
       <g pointer-events="none">
-        <polygon points="388,550 412,550 412,560 400,570 388,560" fill="var(--line)" stroke="#333" stroke-width="1.5" transform="translate(0,0)"></polygon>
+        <polygon points="349,880 371,880 371,896 360,912 349,896" fill="var(--line)" stroke="#333" stroke-width="1.5"></polygon>
       </g>
 
       <!-- Drawing layer for arrows -->
@@ -235,24 +235,24 @@
 
       <!-- Runner markers (hidden until toggled on) -->
       <g id="runners-layer">
-        <g class="runner" id="runner-first" transform="translate(516,444)" style="display:none">
-          <circle r="12" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
+        <g class="runner" id="runner-first" transform="translate(464,710)" style="display:none">
+          <circle r="14" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
           <text y="0">R</text>
         </g>
-        <g class="runner" id="runner-second" transform="translate(400,328)" style="display:none">
-          <circle r="12" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
+        <g class="runner" id="runner-second" transform="translate(360,525)" style="display:none">
+          <circle r="14" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
           <text y="0">R</text>
         </g>
-        <g class="runner" id="runner-third" transform="translate(284,444)" style="display:none">
-          <circle r="12" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
+        <g class="runner" id="runner-third" transform="translate(256,710)" style="display:none">
+          <circle r="14" fill="var(--gold)" stroke="#20304f" stroke-width="2"></circle>
           <text y="0">R</text>
         </g>
       </g>
 
       <!-- Ball -->
-      <g id="ball-mark" transform="translate(400,500)">
-        <circle r="8" fill="#ffffff" stroke="#333" stroke-width="1.5"></circle>
-        <path d="M -4,-3 Q 0,0 -4,3 M 4,-3 Q 0,0 4,3" stroke="#c0392b" stroke-width="1" fill="none"></path>
+      <g id="ball-mark" transform="translate(360,800)">
+        <circle r="10" fill="#ffffff" stroke="#333" stroke-width="1.5"></circle>
+        <path d="M -5,-4 Q 0,0 -5,4 M 5,-4 Q 0,0 5,4" stroke="#c0392b" stroke-width="1" fill="none"></path>
       </g>
 
       <!-- Defensive players (draggable) -->
@@ -279,21 +279,21 @@
   var grassBg = document.getElementById("grass-bg");
   var ballMark = document.getElementById("ball-mark");
 
-  var PAD_X = 20, PAD_Y = 20, MAX_X = 780, MAX_Y = 590;
-  var PLAYER_R = 17;
+  var PAD_X = 20, PAD_Y = 20, MAX_X = 700, MAX_Y = 945;
+  var PLAYER_R = 21;
 
   var DEFAULT_PLAYERS = {
-    P:  {x:400, y:450, color:"#7a2323"},
-    C:  {x:400, y:580, color:"#7a2323"},
-    "1B": {x:500, y:410, color:"#1e3357"},
-    "2B": {x:460, y:350, color:"#1e3357"},
-    SS: {x:340, y:350, color:"#1e3357"},
-    "3B": {x:300, y:410, color:"#1e3357"},
-    LF: {x:170, y:230, color:"#2d5a2d"},
-    CF: {x:400, y:140, color:"#2d5a2d"},
-    RF: {x:630, y:230, color:"#2d5a2d"}
+    P:  {x:360, y:720, color:"#7a2323"},
+    C:  {x:360, y:928, color:"#7a2323"},
+    "1B": {x:450, y:656, color:"#1e3357"},
+    "2B": {x:414, y:560, color:"#1e3357"},
+    SS: {x:306, y:560, color:"#1e3357"},
+    "3B": {x:270, y:656, color:"#1e3357"},
+    LF: {x:153, y:368, color:"#2d5a2d"},
+    CF: {x:360, y:224, color:"#2d5a2d"},
+    RF: {x:567, y:368, color:"#2d5a2d"}
   };
-  var DEFAULT_BALL = {x:400, y:500};
+  var DEFAULT_BALL = {x:360, y:800};
 
   var players = {};
   var runners = {first:false, second:false, third:false};
