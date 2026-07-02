@@ -132,6 +132,20 @@
     display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation;
   }
   .replay:active{transform:translateY(1px);}
+  .seg button[data-tool="quiz"].active{background:#7ec8ff;color:#062036;}
+  .panel{
+    position:absolute;right:8px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:9;
+    display:flex;flex-direction:column;gap:6px;
+    background:rgba(16,25,34,.95);border:1px solid var(--line);border-radius:14px;padding:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.55);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  }
+  .pbtn{
+    border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+    font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px;cursor:pointer;
+    text-align:left;touch-action:manipulation;white-space:nowrap;
+  }
+  .pbtn:active{transform:translateY(1px);}
 
   svg#field{width:100%;height:100%;touch-action:none;display:block;}
   svg#field *{touch-action:none;}
@@ -197,6 +211,9 @@
       </clipPath>
       <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 L3,5 z" fill="#ffd54a" stroke="#7a5c00" stroke-width="0.6"/>
+      </marker>
+      <marker id="throwHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 L3,5 z" fill="#ffffff" stroke="#444" stroke-width="0.6"/>
       </marker>
       <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
         <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
@@ -275,6 +292,7 @@
     <div class="seg" role="group" aria-label="Tool">
       <button data-tool="move" class="active">Move</button>
       <button data-tool="arrow">Arrow</button>
+      <button data-tool="quiz">Quiz</button>
     </div>
   </div>
   <div class="corner tr">
@@ -286,7 +304,16 @@
     <button class="cbtn" id="resetPlayers">Reset</button>
   </div>
   <div class="corner br">
-    <button class="cbtn" id="clearMarks">Clear</button>
+    <button class="cbtn" id="checkBtn" style="display:none">Check</button>
+    <button class="cbtn" id="moreBtn" aria-label="More options">&#8943;</button>
+  </div>
+  <div class="panel" id="morePanel" style="display:none">
+    <button class="pbtn" id="stepBtn">Step through play &#9654;</button>
+    <button class="pbtn" id="clearMarks">Clear arrows</button>
+    <button class="pbtn" id="focusBtn">Focus: Off</button>
+    <button class="pbtn" id="roverBtn">10th fielder: Off</button>
+    <button class="pbtn" id="savePlayBtn">Save this play</button>
+    <button class="pbtn" id="delPlayBtn">Delete a saved play</button>
   </div>
   <div class="cue" id="cueBar" aria-live="polite"></div>
 </div>
@@ -365,7 +392,7 @@
   function renderRunners(){
     rLayer.textContent='';
     for(var b=1;b<=3;b++){
-      if(!runners[b]) continue;
+      if(!runners[b]||(hiddenRunnerBases&&hiddenRunnerBases[b])) continue;
       var base=BASE_XY[b];
       var dx=HOME.x-base.x, dy=HOME.y-base.y, len=Math.hypot(dx,dy);
       var ox=base.x+dx/len*20, oy=base.y+dy/len*20;
@@ -384,28 +411,37 @@
 
   /* ---------- ball ---------- */
   var bLayer=document.getElementById('ballLayer');
+  var bNode=null;
   function renderBall(){
     bLayer.textContent='';
+    bNode=null;
     if(!ball) return;
     var g=el('g',{'transform':'translate('+ball.x+','+ball.y+')','filter':'url(#tokenShadow)'});
     g.appendChild(el('circle',{r:15,fill:'#fff',stroke:'#c9ccd1','stroke-width':1.5}));
     g.appendChild(el('path',{d:'M -8 -7 A 12 12 0 0 1 -8 7',fill:'none',stroke:'#d7263d','stroke-width':1.8}));
     g.appendChild(el('path',{d:'M 8 -7 A 12 12 0 0 0 8 7',fill:'none',stroke:'#d7263d','stroke-width':1.8}));
-    bLayer.appendChild(g);
+    bNode=g; bLayer.appendChild(g);
   }
   function setBall(p){ ball={x:clampX(p.x),y:clampY(p.y)}; renderBall(); }
 
   /* ---------- arrows ---------- */
   var aLayer=document.getElementById('arrowsLayer');
   var pLayer=document.getElementById('previewLayer');
-  function arrowNode(a,preview){
+  var throwArrows=[];
+  function arrowNode(a,preview,kind){
     var g=el('g',{});
-    g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#3a2e00','stroke-width':8,'stroke-linecap':'round',opacity:preview?0.4:0.55}));
-    g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#ffd54a','stroke-width':5,'stroke-linecap':'round','marker-end':'url(#arrowHead)',opacity:preview?0.7:1}));
+    if(kind==='throw'){
+      g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#1d2731','stroke-width':6.5,'stroke-linecap':'round',opacity:0.55}));
+      g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#ffffff','stroke-width':3.5,'stroke-linecap':'round','stroke-dasharray':'10 9','marker-end':'url(#throwHead)'}));
+    } else {
+      g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#3a2e00','stroke-width':8,'stroke-linecap':'round',opacity:preview?0.4:0.55}));
+      g.appendChild(el('line',{x1:a.x1,y1:a.y1,x2:a.x2,y2:a.y2,stroke:'#ffd54a','stroke-width':5,'stroke-linecap':'round','marker-end':'url(#arrowHead)',opacity:preview?0.7:1}));
+    }
     return g;
   }
   function renderArrows(){
     aLayer.textContent='';
+    throwArrows.forEach(function(a){ aLayer.appendChild(arrowNode(a,false,'throw')); });
     arrows.forEach(function(a){ aLayer.appendChild(arrowNode(a,false)); });
   }
   function showPreview(a){ pLayer.textContent=''; pLayer.appendChild(arrowNode(a,true)); }
@@ -479,12 +515,16 @@
   // Hard stop: the field area never scrolls (covers older touch handling too)
   document.querySelector('.stage').addEventListener('touchmove',function(e){ e.preventDefault(); },{passive:false});
 
-  /* ---------- tool toggle (Move / Arrow) ---------- */
+  /* ---------- tool toggle (Move / Arrow / Quiz) ---------- */
   var segBtns=document.querySelectorAll('.seg button');
   segBtns.forEach(function(btn){
     btn.addEventListener('click',function(){
       tool=btn.getAttribute('data-tool');
       segBtns.forEach(function(b){ b.classList.toggle('active', b===btn); });
+      if(tool==='quiz'){
+        if(currentSituation){ loadSituation(currentSituation,false,true); }
+        else { cueEl.textContent='Quiz mode: pick a situation from Load, then place the players'; cueEl.classList.add('show'); }
+      } else if(quizState){ quizState=null; updateCheckBtn(); }
     });
   });
 
@@ -613,7 +653,7 @@
     function cp(p){return pt(Math.round(Math.max(228,Math.min(772,p.x))),Math.round(Math.max(208,Math.min(935,p.y))));}
     function lerp(a,b,t){return cp(pt(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t));}
     function beyond(s,d){var dx=s.x-HOME.x,dy=s.y-HOME.y,L=Math.hypot(dx,dy)||1;return cp(pt(s.x+dx/L*d,s.y+dy/L*d));}
-    function add(g,name,runners,outs,ball,moves,cue){PRESETS.push({g:g,name:name,runners:runners,outs:outs,ball:ball,moves:moves,cue:cue});}
+    function add(g,name,runners,outs,ball,moves,cue,rm){PRESETS.push({g:g,name:name,runners:runners,outs:outs,ball:ball,moves:moves,cue:cue,rmoves:rm});}
 
     var GBS={'3B':pt(352,602),'SS':pt(420,516),'2B':pt(596,516),'1B':pt(654,624),'P':pt(500,636)};
     var OFD={LF:pt(300,335),CF:pt(500,262),RF:pt(700,335)};
@@ -876,86 +916,435 @@
     add('Team positioning','Shade for a righty pull hitter',[],0,null,mvRt,'Everybody two big steps toward LEFT field');
     var mvLt={}; ['LF','CF','RF','SS','2B'].forEach(function(f){var d=defaultOf(f);mvLt[f]=cp(pt(d.x+46,d.y));});
     add('Team positioning','Shade for a lefty pull hitter',[],0,null,mvLt,'Everybody two big steps toward RIGHT field');
+
+    /* Baserunning (offense) */
+    add('Baserunning (offense)','Force play: grounder — you MUST run',[1],0,GBS.SS,
+        {'SS':GBS.SS,'2B':AT.second,'1B':AT.first},
+        'Ball on the ground with a force — sprint to 2nd, no thinking',[{a:1,b:2}]);
+    add('Baserunning (offense)','No force: grounder in front of you',[2],0,GBS['3B'],
+        {'3B':GBS['3B'],'1B':AT.first},
+        'Ball hit in FRONT of you — freeze at 2nd, do not run into a tag',[]);
+    add('Baserunning (offense)','Tag up: deep fly, you are on 3rd',[3],1,FLYS.CF.deep,
+        {'CF':FLYS.CF.deep,'1B':lerp(AT.home,FLYS.CF.deep,0.34),'C':AT.home},
+        'Stay ON the bag until the catch — then GO home hard',[{a:3,b:'H'}]);
+    add('Baserunning (offense)','Halfway: medium fly, you are on 1st',[1],1,FLYS.CF.medium,
+        {'CF':FLYS.CF.medium},
+        'Go HALFWAY — if it drops, sprint to 2nd; if caught, get back',[{a:1,b:2,half:true}]);
+    add('Baserunning (offense)','Line drive: freeze first',[1],0,pt(470,540),
+        {'SS':pt(470,540)},
+        'Line drive — FREEZE until it gets through, then react',[{a:1,b:2,half:true}]);
+    add('Baserunning (offense)','Two outs: run on contact',[1,2],2,GBS.SS,
+        {'SS':GBS.SS,'1B':AT.first},
+        'TWO OUTS — run hard on anything, no reading the ball',[{a:2,b:3},{a:1,b:2}]);
+    add('Baserunning (offense)','Ball in the dirt: you are on 3rd',[3],1,pt(452,922),
+        {'C':pt(452,922),'P':AT.home},
+        'Ball gets away — look at coach, listen for GO',[{a:3,b:'H'}]);
+    add('Baserunning (offense)','Steal 2nd: get a good jump',[1],1,null,
+        {'SS':AT.second,'CF':AT.backSecond},
+        'Good lead, watch the pitcher — GO on his first move',[{a:1,b:2}]);
+    add('Baserunning (offense)','Shallow fly: too short to tag',[3],1,FLYS.LF.shallow,
+        {'LF':FLYS.LF.shallow,'C':AT.home},
+        'Too shallow — tag up but HOLD at 3rd unless it drops',[]);
+    add('Baserunning (offense)','On 2nd: ball hit behind you',[2],0,GBS['2B'],
+        {'2B':GBS['2B'],'1B':AT.first,'3B':AT.third},
+        'Ball hit BEHIND you on the right side — take 3rd right away',[{a:2,b:3}]);
   })();
   /* ---------- end expanded library ---------- */
 
+  /* ---------- select builder (presets + saved plays) ---------- */
   var sel=document.getElementById('presets');
-  var groups={};
-  PRESETS.forEach(function(pre,idx){
-    var gname=pre.g||'Situations';
-    if(!groups[gname]){ var og=document.createElement('optgroup'); og.label=gname; sel.appendChild(og); groups[gname]=og; }
-    var o=document.createElement('option'); o.value=idx; o.textContent=pre.name; groups[gname].appendChild(o);
-  });
+  function loadStore(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+  function saveStore(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  var savedPlays=loadStore('sb_plays',[]);
+  function rebuildSelect(){
+    sel.innerHTML='<option value="">Load…</option>';
+    if(savedPlays.length){
+      var mg=document.createElement('optgroup'); mg.label='My saved plays'; sel.appendChild(mg);
+      savedPlays.forEach(function(sp,i){ var o=document.createElement('option'); o.value='sv'+i; o.textContent=sp.name; mg.appendChild(o); });
+    }
+    var groups={};
+    PRESETS.forEach(function(pre,idx){
+      var gname=pre.g||'Situations';
+      if(!groups[gname]){ var og=document.createElement('optgroup'); og.label=gname; sel.appendChild(og); groups[gname]=og; }
+      var o=document.createElement('option'); o.value=idx; o.textContent=pre.name; groups[gname].appendChild(o);
+    });
+  }
+  rebuildSelect();
 
-  /* ---------- animation ---------- */
+  /* ---------- play engine ---------- */
   var currentSituation=null, animRAF=null, curIndex=-1;
+  var timeline=[], tlIndex=0, quizState=null;
+  var hiddenRunnerBases={};
+  var BASEPTS={first:AT.first,second:AT.second,third:AT.third,home:AT.home};
+  var BASEWORD={'1st':'first','1b':'first','2nd':'second','3rd':'third','3b':'third','home':'home','plate':'home'};
+
   function stopAnim(){ if(animRAF){ cancelAnimationFrame(animRAF); animRAF=null; } }
-  function animateMovers(movers){
-    stopAnim();
-    var dur=900, start=null;
+  function tween(items,dur,done){
+    var start=null;
     function ease(t){ return t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
-    function step(ts){
+    function stepF(ts){
       if(start===null) start=ts;
       var t=Math.min(1,(ts-start)/dur), e=ease(t);
-      movers.forEach(function(m){ m.f.x=m.x0+(m.x1-m.x0)*e; m.f.y=m.y0+(m.y1-m.y0)*e; setFielderPos(m.f); });
-      if(t<1){ animRAF=requestAnimationFrame(step); } else { animRAF=null; }
+      items.forEach(function(m){ m.set(m.x0+(m.x1-m.x0)*e, m.y0+(m.y1-m.y0)*e); });
+      if(t<1){ animRAF=requestAnimationFrame(stepF); } else { animRAF=null; if(done) done(); }
     }
-    animRAF=requestAnimationFrame(step);
+    stopAnim(); animRAF=requestAnimationFrame(stepF);
   }
-  function loadSituation(pre, animate){
-    stopAnim();
-    // start from standard alignment
-    defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
-    // scenario
-    runners={1:false,2:false,3:false};
-    (pre.runners||[]).forEach(function(b){ runners[b]=true; });
-    outs=pre.outs||0;
-    ball = pre.ball ? {x:pre.ball.x,y:pre.ball.y} : null;
-    situationInput.value=pre.name;
-    arrows=[];
-    // movement arrows + movers
-    var movers=[], moves=pre.moves||{};
+  function ballSetter(){ return function(x,y){ if(!ball){ ball={x:x,y:y}; renderBall(); } ball.x=x; ball.y=y; if(bNode) bNode.setAttribute('transform','translate('+x+','+y+')'); }; }
+  function near(a,b,d){ return Math.hypot(a.x-b.x,a.y-b.y)<d; }
+
+  function computeMovers(pre){
+    var movers=[], runA=[], moves=pre.moves||{};
     Object.keys(moves).forEach(function(id){
       var f=getFielder(id); if(!f) return;
       var d=defaultOf(id), t=moves[id];
-      if(Math.hypot(t.x-d.x,t.y-d.y)>6){ arrows.push({x1:d.x,y1:d.y,x2:t.x,y2:t.y}); }
+      if(Math.hypot(t.x-d.x,t.y-d.y)>6){ runA.push({x1:d.x,y1:d.y,x2:t.x,y2:t.y}); }
       movers.push({f:f,x0:d.x,y0:d.y,x1:t.x,y1:t.y});
     });
-    renderRunners(); renderOuts(); renderBall(); renderArrows();
+    return {movers:movers,runArrows:runA};
+  }
+
+  /*SEQ_START*/
+  function buildSeq(pre){
+    var cueTxt=(CUES[pre.name]||pre.cue||'');
+    var mv=pre.moves||{}, ids=Object.keys(mv);
+    var backs=[AT.backFirst,AT.backThird,AT.backSecond,AT.backHome];
+    var recv={};
+    Object.keys(BASEPTS).forEach(function(k){
+      ids.forEach(function(id){ if(near(mv[id],BASEPTS[k],16)) recv[k]=true; });
+    });
+    var order=[], m, re=/(?:→|to|at|fires?|throws?|flips?)\s+(?:the\s+)?(1st|1b|2nd|3rd|3b|home|plate)/gi;
+    while((m=re.exec(cueTxt))){
+      var k=BASEWORD[m[1].toLowerCase()];
+      if(k&&recv[k]&&order.indexOf(k)<0) order.push(k);
+    }
+    if(!order.length){
+      ['second','home','third','first'].some(function(k){ if(recv[k]){ order.push(k); return true; } });
+      if(order.length&&order[0]!=='first'&&recv['first']&&order.indexOf('first')<0) order.push('first');
+    }
+    var chain=order.map(function(k){ return {x:BASEPTS[k].x,y:BASEPTS[k].y}; });
+    if(pre.ball && chain.length){
+      var bd=Math.hypot(pre.ball.x-HOME.x,pre.ball.y-HOME.y);
+      if(bd>380){
+        var cut=null;
+        ids.forEach(function(id){
+          if(cut) return;
+          var t=mv[id];
+          var isBase=Object.keys(BASEPTS).some(function(k2){ return near(t,BASEPTS[k2],16); });
+          var isBack=backs.some(function(b){ return near(t,b,16); });
+          if(!isBase && !isBack && !near(t,pre.ball,34)) cut={x:t.x,y:t.y};
+        });
+        if(cut) chain.unshift(cut);
+      }
+    }
+    var from=null;
+    if(!pre.ball && chain.length){
+      var thrower=(/pickoff: p|p spins|p snaps/i.test(pre.name+' '+cueTxt))?'P':'C';
+      var d2=defaultOf(thrower); from={x:d2.x,y:d2.y};
+    }
+    return {chain:chain, from:from};
+  }
+  /*SEQ_END*/
+
+  function runnerPt(b){
+    if(b==='H') return {x:AT.home.x, y:AT.home.y};
+    var base=BASE_XY[b];
+    var dx=HOME.x-base.x, dy=HOME.y-base.y, len=Math.hypot(dx,dy);
+    return {x:base.x+dx/len*20, y:base.y+dy/len*20};
+  }
+  function mkRunnerToken(p){
+    var g=el('g',{'transform':'translate('+p.x+','+p.y+')','filter':'url(#tokenShadow)'});
+    g.appendChild(el('circle',{r:22,fill:'#ff7a1a',stroke:'#fff','stroke-width':3}));
+    var t=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#fff','font-size':'17','font-weight':'800','font-family':'system-ui'});
+    t.textContent='R'; g.appendChild(t);
+    rLayer.appendChild(g);
+    return g;
+  }
+
+  function buildTimeline(pre){
+    var legs=[];
+    if(pre.ball) legs.push({t:'hit', from:{x:HOME.x,y:HOME.y-16}, to:{x:pre.ball.x,y:pre.ball.y}});
+    var cm=computeMovers(pre);
+    if(cm.movers.length) legs.push({t:'move', movers:cm.movers});
+    var runs=(pre.rmoves||[]).slice();
+    if(runs.length) legs.push({t:'run', runs:runs});
+    var seq=buildSeq(pre);
+    var cur = pre.ball ? {x:pre.ball.x,y:pre.ball.y} : seq.from;
+    if(cur){ seq.chain.forEach(function(p){ legs.push({t:'throw', from:cur, to:p}); cur=p; }); }
+    return legs;
+  }
+  function throwArrowsFrom(legs){
+    var out=[];
+    legs.forEach(function(l){ if(l.t==='throw') out.push({x1:l.from.x,y1:l.from.y,x2:l.to.x,y2:l.to.y}); });
+    return out;
+  }
+
+  function prepStart(pre){
+    stopAnim();
+    defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
+    runners={1:false,2:false,3:false};
+    (pre.runners||[]).forEach(function(b){ runners[b]=true; });
+    hiddenRunnerBases={};
+    ball = pre.ball ? {x:pre.ball.x,y:pre.ball.y} : null;
+    renderRunners(); renderBall();
+  }
+
+  function finishRun(toks,wasHalf){
+    toks.forEach(function(o){
+      o.tok.remove();
+      delete hiddenRunnerBases[o.r.a];
+      if(!wasHalf){ runners[o.r.a]=false; if(o.r.b!=='H') runners[o.r.b]=true; }
+    });
+    renderRunners();
+  }
+  function runLeg(leg,done){
+    if(leg.t==='hit'){
+      ball={x:leg.from.x,y:leg.from.y}; renderBall();
+      tween([{set:ballSetter(),x0:leg.from.x,y0:leg.from.y,x1:leg.to.x,y1:leg.to.y}],460,done);
+    } else if(leg.t==='move'){
+      var items=leg.movers.map(function(mv){
+        return {set:(function(f){return function(x,y){ f.x=x; f.y=y; setFielderPos(f); };})(mv.f),
+                x0:mv.x0,y0:mv.y0,x1:mv.x1,y1:mv.y1};
+      });
+      tween(items,900,done);
+    } else if(leg.t==='throw'){
+      if(!ball){ ball={x:leg.from.x,y:leg.from.y}; renderBall(); }
+      tween([{set:ballSetter(),x0:leg.from.x,y0:leg.from.y,x1:leg.to.x,y1:leg.to.y}],380,done);
+    } else if(leg.t==='run'){
+      var toks=[], ritems=[];
+      leg.runs.forEach(function(r){
+        var p0=runnerPt(r.a);
+        var pEnd=runnerPt(r.b);
+        var p1=r.half ? {x:(p0.x+pEnd.x)/2, y:(p0.y+pEnd.y)/2} : pEnd;
+        hiddenRunnerBases[r.a]=true;
+        var tok=mkRunnerToken(p0); toks.push({tok:tok,r:r});
+        ritems.push({set:(function(tk){return function(x,y){ tk.setAttribute('transform','translate('+x+','+y+')'); };})(tok),
+                     x0:p0.x,y0:p0.y,x1:p1.x,y1:p1.y});
+      });
+      renderRunners();
+      tween(ritems,700,function(){
+        var halves=leg.runs.some(function(r){ return r.half; });
+        if(halves){
+          var back=ritems.map(function(it){ return {set:it.set,x0:it.x1,y0:it.y1,x1:it.x0,y1:it.y0}; });
+          tween(back,600,function(){ finishRun(toks,true); if(done) done(); });
+        } else { finishRun(toks,false); if(done) done(); }
+      });
+    } else { if(done) done(); }
+  }
+
+  function playAll(){
+    if(!currentSituation) return;
+    prepStart(currentSituation);
+    tlIndex=0;
+    (function nextLeg(){
+      if(tlIndex>=timeline.length) return;
+      runLeg(timeline[tlIndex++], nextLeg);
+    })();
+  }
+  function stepOnce(){
+    if(!currentSituation||!timeline.length) return;
+    if(tlIndex===0||tlIndex>=timeline.length){ prepStart(currentSituation); tlIndex=0; }
+    runLeg(timeline[tlIndex++], null);
+  }
+
+  /* ---------- quiz ---------- */
+  var checkBtn=document.getElementById('checkBtn');
+  function updateCheckBtn(){
+    checkBtn.style.display = quizState ? '' : 'none';
+    checkBtn.textContent = (quizState&&quizState.phase===2) ? 'Answer' : 'Check';
+  }
+  function setTokenStroke(f,color,w){
+    var body=f.node.childNodes[1];
+    if(body){ body.setAttribute('stroke',color); body.setAttribute('stroke-width',w); }
+  }
+  function clearTokenMarks(){
+    fielders.forEach(function(f){ setTokenStroke(f,'#ffffff',3.5); });
+    pLayer.textContent='';
+  }
+  function drawGhosts(targets){
+    pLayer.textContent='';
+    Object.keys(targets).forEach(function(id){
+      var t=targets[id];
+      var g=el('g',{'transform':'translate('+t.x+','+t.y+')'});
+      g.appendChild(el('circle',{r:33,fill:'none',stroke:'#ffd54a','stroke-width':3,'stroke-dasharray':'7 7',opacity:0.95}));
+      var tx=el('text',{'text-anchor':'middle','dy':'0.34em','fill':'#ffd54a','font-size':'17','font-weight':'800','font-family':'system-ui',opacity:0.95});
+      tx.textContent=id; g.appendChild(tx);
+      pLayer.appendChild(g);
+    });
+  }
+  checkBtn.addEventListener('click',function(){
+    if(!quizState) return;
+    if(quizState.phase===1){
+      var total=0, good=0;
+      Object.keys(quizState.targets).forEach(function(id){
+        var f=getFielder(id); if(!f) return;
+        total++;
+        var t=quizState.targets[id];
+        var ok=Math.hypot(f.x-t.x,f.y-t.y)<=62;
+        if(ok) good++;
+        setTokenStroke(f, ok?'#35d07f':'#ff5d5d', 5);
+      });
+      drawGhosts(quizState.targets);
+      arrows=quizState.runArrows.slice(); throwArrows=quizState.throwArrows.slice(); renderArrows();
+      cueEl.textContent='You got '+good+' of '+total+' — tap ANSWER to watch the play';
+      cueEl.classList.add('show');
+      quizState.phase=2; updateCheckBtn();
+    } else {
+      var pre=currentSituation;
+      quizState=null; updateCheckBtn();
+      clearTokenMarks();
+      cueEl.textContent=CUES[pre.name]||pre.cue||pre.name||''; cueEl.classList.add('show');
+      playAll();
+    }
+  });
+
+  /* ---------- load a situation ---------- */
+  function loadSituation(pre, animate, quiz){
+    stopAnim();
+    currentSituation=pre;
+    prepStart(pre);
+    outs=pre.outs||0;
+    situationInput.value=pre.name;
+    clearTokenMarks();
+    timeline=buildTimeline(pre); tlIndex=0;
+    var cm=computeMovers(pre);
+    var tArrows=throwArrowsFrom(timeline);
+    if(quiz){
+      arrows=[]; throwArrows=[]; renderArrows(); renderOuts();
+      quizState={targets:{}, runArrows:cm.runArrows, throwArrows:tArrows, phase:1};
+      cm.movers.forEach(function(m){ quizState.targets[m.f.id]={x:m.x1,y:m.y1}; });
+      cueEl.textContent='Your turn: drag each player where he goes, then tap CHECK';
+      cueEl.classList.add('show');
+      updateCheckBtn();
+      return;
+    }
+    quizState=null; updateCheckBtn();
+    arrows=cm.runArrows.slice(); throwArrows=tArrows; renderArrows(); renderOuts();
     cueEl.textContent = CUES[pre.name] || pre.cue || pre.name || '';
     cueEl.classList.toggle('show', !!cueEl.textContent);
-    if(animate){ animateMovers(movers); }
-    else { movers.forEach(function(m){ m.f.x=m.x1; m.f.y=m.y1; setFielderPos(m.f); }); }
-    currentSituation=pre;
+    if(animate){ playAll(); }
+    else { cm.movers.forEach(function(m){ m.f.x=m.x1; m.f.y=m.y1; setFielderPos(m.f); }); }
+  }
+
+  function applySaved(sp){
+    stopAnim(); currentSituation=null; timeline=[]; tlIndex=0; quizState=null; updateCheckBtn();
+    clearTokenMarks(); hiddenRunnerBases={};
+    fielders.forEach(function(f){ var p=sp.f[f.id]; if(p){ f.x=p[0]; f.y=p[1]; setFielderPos(f); } });
+    runners={1:!!sp.runners[1],2:!!sp.runners[2],3:!!sp.runners[3]};
+    outs=sp.outs||0;
+    ball=sp.ball?{x:sp.ball.x,y:sp.ball.y}:null;
+    arrows=(sp.arrows||[]).slice(); throwArrows=[];
+    situationInput.value=sp.name;
+    cueEl.textContent=sp.name; cueEl.classList.add('show');
+    renderRunners(); renderOuts(); renderBall(); renderArrows();
   }
 
   sel.addEventListener('change',function(){
-    if(sel.value==='') return;
-    curIndex=Number(sel.value);
-    loadSituation(PRESETS[curIndex], true);
-    sel.selectedIndex=0;            // keep the control compact ("Load…")
+    var v=sel.value;
+    sel.selectedIndex=0;
     try{ sel.blur(); }catch(_){}
+    if(v==='') return;
+    if(v.slice(0,2)==='sv'){ var sp=savedPlays[Number(v.slice(2))]; if(sp) applySaved(sp); return; }
+    curIndex=Number(v);
+    loadSituation(PRESETS[curIndex], true, tool==='quiz');
   });
   document.getElementById('replayBtn').addEventListener('click',function(){
-    if(currentSituation) loadSituation(currentSituation, true);
+    if(!currentSituation||quizState) return;
+    playAll();
   });
   document.getElementById('nextBtn').addEventListener('click',function(){
     curIndex=(curIndex+1)%PRESETS.length;
-    loadSituation(PRESETS[curIndex], true);
+    loadSituation(PRESETS[curIndex], true, tool==='quiz');
   });
 
-  /* ---------- reset / clear ---------- */
+  /* ---------- more panel ---------- */
+  var morePanel=document.getElementById('morePanel');
+  var moreBtn=document.getElementById('moreBtn');
+  moreBtn.addEventListener('click',function(e){
+    morePanel.style.display = morePanel.style.display==='none' ? '' : 'none';
+    e.stopPropagation();
+  });
+  document.addEventListener('pointerdown',function(e){
+    if(morePanel.style.display!=='none' && !morePanel.contains(e.target) && e.target!==moreBtn){
+      morePanel.style.display='none';
+    }
+  });
+  document.getElementById('stepBtn').addEventListener('click',function(){ stepOnce(); });
+  document.getElementById('clearMarks').addEventListener('click',function(){
+    arrows=[]; throwArrows=[]; renderArrows();
+  });
+
+  /* ---------- focus mode ---------- */
+  var focusList=['','P','C','1B','2B','3B','SS','LF','CF','RF'];
+  var focusIdx=0;
+  function applyFocus(){
+    var fid=focusList[focusIdx]||'';
+    fielders.forEach(function(f){
+      f.node.style.opacity=(!fid||f.id===fid)?'1':'0.35';
+      if(fid===f.id){ setTokenStroke(f,'#ffd54a',5); }
+    });
+    document.getElementById('focusBtn').textContent='Focus: '+(fid||'Off');
+  }
+  document.getElementById('focusBtn').addEventListener('click',function(){
+    focusIdx=(focusIdx+1)%focusList.length;
+    if(!focusList[focusIdx]) clearTokenMarks();
+    applyFocus();
+  });
+
+  /* ---------- 10th fielder (rover) ---------- */
+  var roverOn=!!loadStore('sb_rover',false);
+  function setRover(on,silent){
+    roverOn=on; saveStore('sb_rover',on);
+    var has=!!getFielder('RV');
+    if(on&&!has){
+      fielders.push({id:'RV',x:552,y:424});
+      defaults.push({id:'RV',x:552,y:424});
+      COLORS['RV']='#0e7c6b';
+    } else if(!on&&has){
+      for(var i=fielders.length-1;i>=0;i--){ if(fielders[i].id==='RV'){ fielders.splice(i,1); } }
+      for(var j=defaults.length-1;j>=0;j--){ if(defaults[j].id==='RV'){ defaults.splice(j,1); } }
+    }
+    buildFielders(); applyFocus();
+    document.getElementById('roverBtn').textContent='10th fielder: '+(on?'On':'Off');
+    if(!silent){ currentSituation=null; timeline=[]; quizState=null; updateCheckBtn(); }
+  }
+  document.getElementById('roverBtn').addEventListener('click',function(){ setRover(!roverOn); });
+
+  /* ---------- save / delete plays ---------- */
+  document.getElementById('savePlayBtn').addEventListener('click',function(){
+    var name=prompt('Name this play:'); if(!name) return;
+    name=String(name).slice(0,40);
+    var f={}; fielders.forEach(function(p){ f[p.id]=[Math.round(p.x),Math.round(p.y)]; });
+    var sp={name:name, f:f, runners:{1:runners[1],2:runners[2],3:runners[3]}, outs:outs,
+            ball: ball?{x:Math.round(ball.x),y:Math.round(ball.y)}:null,
+            arrows: arrows.slice(0,20)};
+    for(var i=0;i<savedPlays.length;i++){ if(savedPlays[i].name===name){ savedPlays.splice(i,1); break; } }
+    savedPlays.push(sp); saveStore('sb_plays',savedPlays); rebuildSelect();
+    cueEl.textContent='Saved: '+name+' (find it under Load)'; cueEl.classList.add('show');
+    morePanel.style.display='none';
+  });
+  document.getElementById('delPlayBtn').addEventListener('click',function(){
+    if(!savedPlays.length){ alert('No saved plays yet.'); return; }
+    var names=savedPlays.map(function(s){ return s.name; }).join('\n');
+    var name=prompt('Type the exact name to delete:\n\n'+names); if(!name) return;
+    for(var i=0;i<savedPlays.length;i++){
+      if(savedPlays[i].name===name){ savedPlays.splice(i,1); saveStore('sb_plays',savedPlays); rebuildSelect(); return; }
+    }
+    alert('No play named "'+name+'"');
+  });
+
+  /* ---------- reset ---------- */
   document.getElementById('resetPlayers').addEventListener('click',function(){
     stopAnim();
     defaults.forEach(function(d){ var f=getFielder(d.id); f.x=d.x; f.y=d.y; setFielderPos(f); });
-    runners={1:false,2:false,3:false}; outs=0; ball=null; arrows=[];
-    situationInput.value=''; sel.selectedIndex=0; currentSituation=null;
+    runners={1:false,2:false,3:false}; outs=0; ball=null; arrows=[]; throwArrows=[];
+    hiddenRunnerBases={}; timeline=[]; tlIndex=0;
+    situationInput.value=''; sel.selectedIndex=0; currentSituation=null; curIndex=-1;
+    quizState=null; updateCheckBtn(); clearTokenMarks(); applyFocus();
     cueEl.textContent=''; cueEl.classList.remove('show');
     renderRunners(); renderOuts(); renderBall(); renderArrows();
   });
-  document.getElementById('clearMarks').addEventListener('click',function(){
-    arrows=[]; renderArrows();
-  });
+
 
   /* ---------- fit field to screen (kill letterboxing) ---------- */
   var stageEl=document.querySelector('.stage');
@@ -974,6 +1363,8 @@
 
   /* ---------- init ---------- */
   buildFielders();
+  if(roverOn) setRover(true,true);
+  applyFocus(); updateCheckBtn();
   renderRunners(); renderBall(); renderArrows(); renderOuts();
   fitView();
 })();
